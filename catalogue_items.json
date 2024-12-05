@@ -1,0 +1,24 @@
+{
+  "folders": [
+    {
+      "name": "Folder 1",
+      "items": [
+        { "name": "Cube", "itemImage": "Textures/Images/Items/cube01.png", "modelPath": "Models/TestModels/cube01.j3o" },
+        { "name": "Sphere", "itemImage": "Textures/Images/Items/sphere01.png", "modelPath": "Models/TestModels/sphere01.j3o" }
+      ]
+    },
+    {
+      "name": "Folder 2",
+      "items": [
+        { "name": "Pyramid", "itemImage": "Textures/Images/Items/pyramid01.png", "modelPath": "Models/TestModels/pyramid01.j3o" },
+        { "name": "Cylinder", "itemImage": "Textures/Images/Items/cylinder01.png", "modelPath": "Models/TestModels/cylinder01.j3o" }
+      ]
+    },
+    {
+      "name": "Folder 3",
+      "items": [
+        { "name": "Torus", "itemImage": "Textures/Images/Items/torus01.png", "modelPath": "Models/TestModels/torus01.j3o" }
+      ]
+    }
+  ]
+}
