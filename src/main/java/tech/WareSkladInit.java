@@ -4,6 +4,7 @@ import UndoRedo.UndoManager;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bounding.BoundingVolume;
 import com.jme3.collision.CollisionResults;
+import com.jme3.font.BitmapText;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
@@ -28,8 +29,11 @@ public class WareSkladInit extends SimpleApplication {
 
     private Spatial selectedObject;
     private PropertiesPanel propertiesPanel;
-    private ObjectControls objectControls;
+    public ObjectControls objectControls;
     public UndoManager undoManager;
+
+    private BitmapText cursorInfoText;
+    private BitmapText zoomInfoText;
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
@@ -72,11 +76,27 @@ public class WareSkladInit extends SimpleApplication {
 
         setupMouseClickListener();
 
+        setupInfoText();
+
         initLatch.countDown();
     }
 
     public void waitForInitialization() throws InterruptedException {
         initLatch.await();
+    }
+
+    private void setupInfoText() {
+        cursorInfoText = new BitmapText(guiFont, false);
+        cursorInfoText.setSize(20);
+        cursorInfoText.setColor(ColorRGBA.White);
+        cursorInfoText.setLocalTranslation(10, 30, 0);
+        guiNode.attachChild(cursorInfoText);
+
+        zoomInfoText = new BitmapText(guiFont, false);
+        zoomInfoText.setSize(20);
+        zoomInfoText.setColor(ColorRGBA.White);
+        zoomInfoText.setLocalTranslation(10, 50, 0);
+        guiNode.attachChild(zoomInfoText);
     }
 
     private void setupMouseClickListener() {
@@ -186,5 +206,23 @@ public class WareSkladInit extends SimpleApplication {
     @Override
     public void simpleUpdate(float tpf) {
         cameraController.updateCameraPosition(tpf);
+
+        Vector2f mousePos = inputManager.getCursorPosition();
+
+        Vector3f near = cam.getWorldCoordinates(mousePos, 0);
+        Vector3f far = cam.getWorldCoordinates(mousePos, 1);
+        Ray ray = new Ray(near, far.subtract(near).normalizeLocal());
+
+        Plane gridPlane = new Plane(Vector3f.UNIT_Y, 0);
+
+        Vector3f intersection = new Vector3f();
+        if (ray.intersectsWherePlane(gridPlane, intersection)) {
+            float gridX = (float) Math.floor(intersection.x);
+            float gridY = (float) Math.floor(intersection.z);
+
+            cursorInfoText.setText("Cursor: X=" + gridX + " Y=" + gridY);
+        }
+
+        zoomInfoText.setText("Zoom: " + cameraController.getCurrentZoom());
     }
 }

@@ -3,6 +3,7 @@ package tech;
 import UndoRedo.PropertyChangeAction;
 import UndoRedo.UndoManager;
 import com.jme3.asset.AssetManager;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.input.InputManager;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -17,6 +18,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
+import ui.Grid;
 import ui.PropertiesPanel;
 
 public class ObjectControls {
@@ -30,9 +32,27 @@ public class ObjectControls {
     private PropertiesPanel propertiesPanel;
     private UndoManager undoManager;
     private PropertyChangeAction ongoingAction = null;
+    private boolean snapToGrid = false;
+    private boolean heightAdjustment = true;
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
+    }
+
+    public void setSnapToGrid(boolean snapToGrid) {
+        this.snapToGrid = snapToGrid;
+    }
+
+    public boolean isSnapToGrid() {
+        return snapToGrid;
+    }
+
+    public void setHeightAdjustment(boolean heightAdjustment) {
+        this.heightAdjustment = heightAdjustment;
+    }
+
+    public boolean isHeightAdjustment() {
+        return heightAdjustment;
     }
 
     public ObjectControls(InputManager inputManager, AssetManager assetManager, Node rootNode, Camera cam, UndoManager undoManager) {
@@ -81,13 +101,31 @@ public class ObjectControls {
     }
 
     private void setupMouseListeners() {
-        inputManager.addMapping("MouseDrag", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
-        inputManager.addMapping("MouseRelease", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
+        inputManager.addMapping("MouseDrag", new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
+        inputManager.addMapping("MouseRelease", new MouseButtonTrigger(MouseInput.BUTTON_RIGHT));
 
         AnalogListener dragListener = (name, value, tpf) -> {
             if ("MouseDrag".equals(name) && selectedObject != null) {
                 Vector2f mousePos = inputManager.getCursorPosition();
                 Vector3f newPosition = getWorldPositionFromMouse(mousePos);
+
+                if (snapToGrid) {
+                    newPosition.x = Math.round(newPosition.x / Grid.GRID_SPACING) * Grid.GRID_SPACING;
+                    newPosition.z = Math.round(newPosition.z / Grid.GRID_SPACING) * Grid.GRID_SPACING;
+                }
+
+                if (heightAdjustment) {
+                    float objectHeight = 0;
+                    if (selectedObject instanceof Geometry) {
+                        Geometry geom = (Geometry) selectedObject;
+                        if (geom.getModelBound() instanceof BoundingBox) {
+                            BoundingBox box = (BoundingBox) geom.getModelBound();
+                            objectHeight = box.getExtent(new Vector3f(0, 1, 0)).y * geom.getLocalScale().y;
+                        }
+                    }
+
+                    newPosition.y = Grid.GRID_Y_LEVEL + objectHeight;
+                }
 
                 if (ongoingAction == null) {
                     Vector3f initialPosition = selectedObject.getLocalTranslation().clone();

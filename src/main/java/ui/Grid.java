@@ -14,6 +14,8 @@ public class Grid {
     public static final int GRID_WIDTH = 20;
     public static final int GRID_SPACING = 10;
 
+    public static final float GRID_Y_LEVEL = 0f;
+
     private AssetManager assetManager;
     private Node rootNode;
 
@@ -28,8 +30,8 @@ public class Grid {
         for (int i = -GRID_WIDTH; i <= GRID_WIDTH; i++) {
             if (Math.abs(i) * GRID_SPACING <= GRID_WIDTH * GRID_SPACING) {
                 Line verticalLine = new Line(
-                        new Vector3f(i * GRID_SPACING, 0, -GRID_LENGTH * GRID_SPACING),
-                        new Vector3f(i * GRID_SPACING, 0, GRID_LENGTH * GRID_SPACING)
+                        new Vector3f(i * GRID_SPACING, GRID_Y_LEVEL, -GRID_LENGTH * GRID_SPACING),
+                        new Vector3f(i * GRID_SPACING, GRID_Y_LEVEL, GRID_LENGTH * GRID_SPACING)
                 );
                 Geometry verticalGridLine = new Geometry("VerticalLine", verticalLine);
                 Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
@@ -42,8 +44,8 @@ public class Grid {
         for (int i = -GRID_LENGTH; i <= GRID_LENGTH; i++) {
             if (Math.abs(i) * GRID_SPACING <= GRID_LENGTH * GRID_SPACING) {
                 Line horizontalLine = new Line(
-                        new Vector3f(-GRID_WIDTH * GRID_SPACING, 0, i * GRID_SPACING),
-                        new Vector3f(GRID_WIDTH * GRID_SPACING, 0, i * GRID_SPACING)
+                        new Vector3f(-GRID_WIDTH * GRID_SPACING, GRID_Y_LEVEL, i * GRID_SPACING),
+                        new Vector3f(GRID_WIDTH * GRID_SPACING, GRID_Y_LEVEL, i * GRID_SPACING)
                 );
                 Geometry horizontalGridLine = new Geometry("HorizontalLine", horizontalLine);
                 Material mat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");

@@ -1,3 +1,4 @@
 1: Bug: When the app is opened - user needs to manually resize the app screen to fix the JME view being off the panel (Possibly MacOS only).
 2: Bug: JME view lighting in the scene becomes dark after screen resize (Possibly MacOS only).
-3: After loading asset/item onto the scene from assets view, user needs to click the JME view again in order to refresh the JME view and see the item added or any other change from UI.
+3: Bug: After loading asset/item onto the scene from assets view, user needs to click the JME view again in order to refresh the JME view and see the item added or any other change from UI.
+4: Idea: Add new snapping type - object to object snapping.

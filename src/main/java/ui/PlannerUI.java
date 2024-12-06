@@ -101,6 +101,7 @@ public class PlannerUI {
         jmePanel.add(jmeScene.getCanvas(), BorderLayout.CENTER);
 
         plannerPanel.add(jmePanel, BorderLayout.CENTER);
+        propertiesPanel.setObjectControls(jmeScene.objectControls);
         return plannerPanel;
     }
 

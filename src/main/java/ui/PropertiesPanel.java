@@ -7,6 +7,7 @@ import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.function.Consumer;
 import com.jme3.math.Vector3f;
+import tech.ObjectControls;
 
 public class PropertiesPanel extends JPanel {
 
@@ -21,6 +22,11 @@ public class PropertiesPanel extends JPanel {
     private Consumer<Vector3f> onScaleChange;
 
     private boolean isTransformFolded = true;
+    private ObjectControls objectControls;
+
+    public void setObjectControls(ObjectControls objectControls){
+        this.objectControls = objectControls;
+    }
 
     public PropertiesPanel() {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -36,6 +42,15 @@ public class PropertiesPanel extends JPanel {
 
         JPanel transformPanel = createFoldablePanel("Transform", createTransformPanel());
         add(transformPanel);
+
+        JCheckBox snapToGridCheckbox = new JCheckBox("Snap to Grid");
+        add(snapToGridCheckbox);
+        snapToGridCheckbox.addActionListener(e -> objectControls.setSnapToGrid(snapToGridCheckbox.isSelected()));
+
+        JCheckBox heightAdjustmentCheckbox = new JCheckBox("Height Adjustment");
+        heightAdjustmentCheckbox.setSelected(true);
+        add(heightAdjustmentCheckbox);
+        heightAdjustmentCheckbox.addActionListener(e -> objectControls.setHeightAdjustment(heightAdjustmentCheckbox.isSelected()));
 
         add(Box.createVerticalGlue());
 
