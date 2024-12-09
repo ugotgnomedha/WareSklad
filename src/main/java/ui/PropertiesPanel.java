@@ -66,16 +66,16 @@ public class PropertiesPanel extends JPanel {
         positionYField = createCompactTextField(5);
         positionZField = createCompactTextField(5);
         transformContent.add(positionXField);
-        transformContent.add(positionYField);
         transformContent.add(positionZField);
+        transformContent.add(positionYField);
 
         transformContent.add(new JLabel("Rotation:"));
         rotationXField = createCompactTextField(5);
         rotationYField = createCompactTextField(5);
         rotationZField = createCompactTextField(5);
         transformContent.add(rotationXField);
-        transformContent.add(rotationYField);
         transformContent.add(rotationZField);
+        transformContent.add(rotationYField);
 
         transformContent.add(new JLabel("Scale:"));
         scaleXField = createCompactTextField(5);

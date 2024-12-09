@@ -15,6 +15,7 @@ import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
 import ui.Grid;
 import ui.PropertiesPanel;
+import ui.UILinesDrawer;
 
 import java.awt.*;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +35,9 @@ public class WareSkladInit extends SimpleApplication {
 
     private BitmapText cursorInfoText;
     private BitmapText zoomInfoText;
+
+    private FloorPlacer floorPlacer;
+    private UILinesDrawer uiLinesDrawer;
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
@@ -70,13 +74,18 @@ public class WareSkladInit extends SimpleApplication {
         this.setDisplayStatView(false);
         this.setDisplayFps(false);
 
-        modelLoader = new ModelLoader(rootNode, assetManager, undoManager);
-
         objectControls = new ObjectControls(inputManager, assetManager, rootNode, cam, undoManager);
+
+        floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager);
+
+        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer);
 
         setupMouseClickListener();
 
         setupInfoText();
+
+        uiLinesDrawer = new UILinesDrawer();
+        uiLinesDrawer.addLines(this, rootNode);
 
         initLatch.countDown();
     }
@@ -224,5 +233,7 @@ public class WareSkladInit extends SimpleApplication {
         }
 
         zoomInfoText.setText("Zoom: " + cameraController.getCurrentZoom());
+
+        floorPlacer.updatePreview();
     }
 }

@@ -2,7 +2,9 @@ package tech;
 
 public enum RayExcludedObjects {
     OUTLINE("Outline"),
-    HIGHLIGHT("Highlight");
+    HIGHLIGHT("Highlight"),
+    FLOORSEGMENT("FloorSegment"),
+    COMPLETEFLOOR("CompleteFloor");
 
     private final String objectName;
 

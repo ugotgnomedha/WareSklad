@@ -60,7 +60,7 @@ public class AssetsUI {
 
         JPanel contentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
 
-        JButton goBackButton = createIconButton("Textures/Images/Icons/go_back.png", "Go Back");
+        JButton goBackButton = createIconButton("Textures/Images/Icons/go_back.png", "Go To Root");
         goBackButton.addActionListener(e -> displayFolders(catalogue.getFolders()));
         contentsPanel.add(goBackButton);
 
@@ -107,6 +107,9 @@ public class AssetsUI {
     }
 
     private JButton createIconButton(String iconPath, String text) {
+        if (getClass().getClassLoader().getResource(iconPath) == null){
+            return new JButton(text);
+        }
         ImageIcon icon = new ImageIcon(getClass().getClassLoader().getResource(iconPath));
 
         if (icon.getIconWidth() == -1) {
