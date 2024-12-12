@@ -3,6 +3,7 @@ package tech;
 import UndoRedo.FloorPlacementAction;
 import UndoRedo.UndoManager;
 import com.jme3.asset.AssetManager;
+import com.jme3.font.BitmapText;
 import com.jme3.input.InputManager;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -17,13 +18,13 @@ import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import com.jme3.scene.VertexBuffer.Type;
 import com.jme3.scene.shape.Box;
 import com.jme3.util.BufferUtils;
 import ui.Grid;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class FloorPlacer {
     private final Node rootNode;
@@ -34,12 +35,17 @@ public class FloorPlacer {
 
     private Vector3f startPoint = null;
     private List<Vector3f> floorPoints = new ArrayList<>();
-    private List<Geometry> floorSegmentGeometries = new ArrayList<>();
+    public List<Geometry> floorSegmentGeometries = new ArrayList<>();
     private Geometry previewFloorGeometry = null;
 
     private static final float FLOOR_THICKNESS = 0.5f;
 
     private boolean floorMode = false;
+
+    private Node measurementNode;
+
+    private Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
+    private Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
 
     public FloorPlacer(Node rootNode, AssetManager assetManager, InputManager inputManager, Camera cam, UndoManager undoManager) {
         this.rootNode = rootNode;
@@ -47,6 +53,9 @@ public class FloorPlacer {
         this.inputManager = inputManager;
         this.cam = cam;
         this.undoManager = undoManager;
+
+        this.measurementNode = new Node("MeasurementNode");
+        this.rootNode.attachChild(this.measurementNode);
         setupInput();
     }
 
@@ -80,8 +89,8 @@ public class FloorPlacer {
                 startPoint = gridPoint;
                 floorPoints.add(gridPoint);
             } else {
-                placeFloorSegment(startPoint, gridPoint);
                 floorPoints.add(gridPoint);
+                placeFloorSegment(startPoint, gridPoint);
 
                 if (gridPoint.equals(floorPoints.get(0))) {
                     createCompleteFloor();
@@ -144,6 +153,10 @@ public class FloorPlacer {
 
         rootNode.attachChild(floorGeometry);
         floorSegmentGeometries.add(floorGeometry);
+
+        float segmentDistance = showMeasurements(false);
+
+        floorSegmentDistances.put(floorGeometry, segmentDistance);
     }
 
     private void createCompleteFloor() {
@@ -182,6 +195,10 @@ public class FloorPlacer {
         floorGeometriesCopy.add(floorGeometry);
         undoManager.addAction(new FloorPlacementAction(floorGeometriesCopy, rootNode));
 
+        float floorArea = showMeasurements(true);
+
+        floorCompleteAreas.put(floorGeometry, floorArea);
+
         floorSegmentGeometries.clear();
         floorPoints.clear();
         startPoint = null;
@@ -191,7 +208,6 @@ public class FloorPlacer {
             previewFloorGeometry = null;
         }
     }
-
 
     private Vector3f calculateCenter(List<Vector3f> points) {
         Vector3f center = new Vector3f(0, 0, 0);
@@ -302,6 +318,7 @@ public class FloorPlacer {
             rootNode.detachChild(previewFloorGeometry);
             previewFloorGeometry = null;
         }
+        clearMeasurements();
     }
 
     private void updatePreviewGeometry(Vector3f gridPoint) {
@@ -341,5 +358,84 @@ public class FloorPlacer {
                 updatePreviewGeometry(gridPoint);
             }
         }
+    }
+
+    private float showMeasurements(boolean isFloorComplete) {
+        clearMeasurements();
+
+        if (isFloorComplete) {
+            float area = calculateArea(floorPoints)/100;
+            Vector3f center = calculateCenter(floorPoints);
+
+            BitmapText measurementText = createBitmapText("Area: " + area + " m^2");
+            measurementText.setLocalScale(0.5f);
+            measurementText.setLocalTranslation(center.x, center.y + 1, center.z);
+            measurementText.rotate((float) Math.toRadians(90), 0, (float) Math.toRadians(180));
+            measurementNode.attachChild(measurementText);
+            return area;
+        } else if (floorPoints.size() >= 1) {
+            Vector3f lastPoint = floorPoints.get(floorPoints.size() - 1);
+            float distance = startPoint != null ? startPoint.distance(lastPoint) : 0;
+            String formattedDistance = String.format(Locale.US, "%.2f", distance / 10);
+
+            BitmapText measurementText = createBitmapText("Distance: " + formattedDistance + " m");
+            measurementText.setLocalScale(0.5f);
+            measurementText.setLocalTranslation(lastPoint.x, lastPoint.y + 1, lastPoint.z);
+            measurementText.rotate((float) Math.toRadians(90), 0, (float) Math.toRadians(180));
+            measurementNode.attachChild(measurementText);
+            return Float.parseFloat(formattedDistance);
+        }
+        return 0;
+    }
+
+    public void clearMeasurements() {
+        measurementNode.detachAllChildren();
+    }
+
+    private BitmapText createBitmapText(String text) {
+        BitmapText bitmapText = new BitmapText(assetManager.loadFont("Interface/Fonts/Default.fnt"), false);
+        bitmapText.setText(text);
+        bitmapText.setColor(ColorRGBA.White);
+        return bitmapText;
+    }
+
+    private float calculateArea(List<Vector3f> points) {
+        if (points.size() < 3) return 0;
+        List<Vector3f> uniquePoints = new ArrayList<>(points);
+        if (uniquePoints.get(0).equals(uniquePoints.get(uniquePoints.size() - 1))) {
+            uniquePoints.remove(uniquePoints.size() - 1);
+        }
+        float area = 0;
+        int n = uniquePoints.size();
+        for (int i = 0; i < n; i++) {
+            Vector3f current = uniquePoints.get(i);
+            Vector3f next = uniquePoints.get((i + 1) % n);
+            area += (current.x * next.z - next.x * current.z);
+        }
+        return Math.abs(area / 2.0f);
+    }
+
+    private float calculateSegmentArea(Geometry floorGeometry) {
+        Vector3f scale = floorGeometry.getLocalScale();
+        float length = scale.x * 2;
+        float width = scale.z * 2;
+
+        return length * width;
+    }
+
+    public Map<Geometry, Float> getFloorSegmentDistances() {
+        return floorSegmentDistances;
+    }
+
+    public Map<Geometry, Float> getFloorCompleteAreas() {
+        return floorCompleteAreas;
+    }
+
+    public void setFloorCompleteAreas(Map<Geometry, Float> floorCompleteAreas) {
+        this.floorCompleteAreas = floorCompleteAreas;
+    }
+
+    public void setFloorSegmentDistances(Map<Geometry, Float> floorSegmentDistances) {
+        this.floorSegmentDistances = floorSegmentDistances;
     }
 }

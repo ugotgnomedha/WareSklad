@@ -27,4 +27,8 @@ public class FloorPlacementAction implements UndoableAction {
             rootNode.attachChild(geometry);
         }
     }
+
+    public List<Geometry> getFloorGeometries() {
+        return floorGeometries;
+    }
 }

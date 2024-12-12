@@ -2,6 +2,8 @@ package ui;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
@@ -15,6 +17,8 @@ public class PropertiesPanel extends JPanel {
     private JTextField positionXField, positionYField, positionZField;
     private JTextField rotationXField, rotationYField, rotationZField;
     private JTextField scaleXField, scaleYField, scaleZField;
+
+    private JLabel floorSegmentDistanceLabel, floorCompleteAreaLabel;
 
     private Consumer<String> onNameChange;
     private Consumer<Vector3f> onPositionChange;
@@ -59,33 +63,90 @@ public class PropertiesPanel extends JPanel {
 
     private JPanel createTransformPanel() {
         JPanel transformContent = new JPanel();
-        transformContent.setLayout(new GridLayout(3, 4, 5, 5));
+        transformContent.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
 
-        transformContent.add(new JLabel("Position:"));
-        positionXField = createCompactTextField(5);
-        positionYField = createCompactTextField(5);
-        positionZField = createCompactTextField(5);
-        transformContent.add(positionXField);
-        transformContent.add(positionZField);
-        transformContent.add(positionYField);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        transformContent.add(new JLabel("Position:"), gbc);
 
-        transformContent.add(new JLabel("Rotation:"));
-        rotationXField = createCompactTextField(5);
-        rotationYField = createCompactTextField(5);
-        rotationZField = createCompactTextField(5);
-        transformContent.add(rotationXField);
-        transformContent.add(rotationZField);
-        transformContent.add(rotationYField);
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        transformContent.add(positionXField = createCompactTextField(5), gbc);
 
-        transformContent.add(new JLabel("Scale:"));
-        scaleXField = createCompactTextField(5);
-        scaleYField = createCompactTextField(5);
-        scaleZField = createCompactTextField(5);
-        transformContent.add(scaleXField);
-        transformContent.add(scaleYField);
-        transformContent.add(scaleZField);
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        transformContent.add(positionYField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 0;
+        transformContent.add(positionZField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        transformContent.add(new JLabel("Rotation:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        transformContent.add(rotationXField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 1;
+        transformContent.add(rotationYField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 1;
+        transformContent.add(rotationZField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        transformContent.add(new JLabel("Scale:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        transformContent.add(scaleXField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 2;
+        gbc.gridy = 2;
+        transformContent.add(scaleYField = createCompactTextField(5), gbc);
+
+        gbc.gridx = 3;
+        gbc.gridy = 2;
+        transformContent.add(scaleZField = createCompactTextField(5), gbc);
+
+        JPanel floorInfoPanel = new JPanel();
+        floorInfoPanel.setLayout(new BoxLayout(floorInfoPanel, BoxLayout.Y_AXIS));
+
+        floorInfoPanel.add(new JLabel("Floor Segment Distance (m):"));
+        floorSegmentDistanceLabel = new JLabel("-");
+        floorInfoPanel.add(floorSegmentDistanceLabel);
+
+        floorInfoPanel.add(new JLabel("Complete Floor Area (m²):"));
+        floorCompleteAreaLabel = new JLabel("-");
+        floorInfoPanel.add(floorCompleteAreaLabel);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 4;
+        transformContent.add(floorInfoPanel, gbc);
 
         return transformContent;
+    }
+
+
+    public void updateFloorProperties(Float distance, Float area) {
+        if (distance != null) {
+            floorSegmentDistanceLabel.setText(String.format("%.2f", distance));
+        } else {
+            floorSegmentDistanceLabel.setText("-");
+        }
+
+        if (area != null) {
+            floorCompleteAreaLabel.setText(String.format("%.2f", area));
+        } else {
+            floorCompleteAreaLabel.setText("-");
+        }
     }
 
     private JPanel createFoldablePanel(String title, JPanel contentPanel) {
@@ -129,9 +190,9 @@ public class PropertiesPanel extends JPanel {
     }
 
     private void setupRealTimeListeners() {
-        nameField.addKeyListener(new KeyAdapter() {
+        nameField.addFocusListener(new FocusAdapter() {
             @Override
-            public void keyReleased(KeyEvent e) {
+            public void focusLost(FocusEvent e) {
                 if (onNameChange != null) {
                     onNameChange.accept(nameField.getText());
                 }

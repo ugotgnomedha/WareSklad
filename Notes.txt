@@ -1,5 +1,5 @@
 1: Bug: When the app is opened - user needs to manually resize the app screen to fix the JME view being off the panel (Possibly MacOS only).
 2: Bug: JME view lighting in the scene becomes dark after screen resize (Possibly MacOS only).
-3: Bug: After loading asset/item onto the scene from assets view, user needs to click the JME view again in order to refresh the JME view and see the item added or any other change from UI.
-4: Idea: Add new snapping type - object to object snapping.
-5: Idea: Add a new setting for grid layout - Centered Grid (current default grid that starts at the origin (0, 0, 0) of the world and goes in both negative and positive directions) or Corner-based Grid (origin at corner of world 0 0 0 and goes only in positive direction)
+3: Idea: New snapping type - object to object snapping.
+4: Idea: New setting for grid layout - Centered Grid (current default grid that starts at the origin (0, 0, 0) of the world and goes in both negative and positive directions) or Corner-based Grid (origin at corner of world 0 0 0 and goes only in positive direction)
+5: Idea: New setting - grid size, allow user to resize the grid as he wishes.

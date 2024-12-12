@@ -21,4 +21,8 @@ public class ModelLoadAction implements UndoableAction {
     public void redo() {
         rootNode.attachChild(model);
     }
+
+    public Spatial getModel() {
+        return model;
+    }
 }

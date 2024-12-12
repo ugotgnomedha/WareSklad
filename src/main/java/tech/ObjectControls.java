@@ -128,6 +128,7 @@ public class ObjectControls {
                 }
 
                 if (ongoingAction == null) {
+                    String initialName = selectedObject.getName() != null ? selectedObject.getName() : "Unnamed Object";
                     Vector3f initialPosition = selectedObject.getLocalTranslation().clone();
                     float[] initialAngles = selectedObject.getLocalRotation().toAngles(null);
                     Vector3f initialRotation = new Vector3f(initialAngles[0], initialAngles[1], initialAngles[2]);
@@ -135,9 +136,10 @@ public class ObjectControls {
 
                     ongoingAction = new PropertyChangeAction(
                             selectedObject,
-                            initialPosition, initialRotation, initialScale,
-                            initialPosition.clone(), initialRotation.clone(), initialScale.clone());
+                            initialName, initialPosition, initialRotation, initialScale,
+                            initialName, initialPosition.clone(), initialRotation.clone(), initialScale.clone());
                 }
+
 
                 float[] currentAngles = selectedObject.getLocalRotation().toAngles(null);
                 Vector3f currentRotation = new Vector3f(currentAngles[0], currentAngles[1], currentAngles[2]);

@@ -1,5 +1,6 @@
 package tech;
 
+import UndoRedo.PropertyChangeAction;
 import UndoRedo.UndoManager;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bounding.BoundingVolume;
@@ -10,6 +11,7 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
 import com.jme3.math.*;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
@@ -18,9 +20,12 @@ import ui.PropertiesPanel;
 import ui.UILinesDrawer;
 
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 public class WareSkladInit extends SimpleApplication {
+    private final Map<Class<? extends Spatial>, SelectionHandler> selectionHandlers = new HashMap<>();
     private final CountDownLatch initLatch = new CountDownLatch(1);
 
     private CameraController cameraController;
@@ -38,10 +43,12 @@ public class WareSkladInit extends SimpleApplication {
 
     private FloorPlacer floorPlacer;
     private UILinesDrawer uiLinesDrawer;
+    private GeometrySelectionHandler geometrySelectionHandler;
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
         this.objectControls.setPropertiesPanel(propertiesPanel);
+        this.geometrySelectionHandler.setPropertiesPanel(propertiesPanel);
     }
 
     @Override
@@ -52,7 +59,7 @@ public class WareSkladInit extends SimpleApplication {
         grid = new Grid(assetManager, rootNode);
 
         undoManager = new UndoManager();
-        inputHandler = new InputHandler(inputManager, cameraController, undoManager);
+        inputHandler = new InputHandler(inputManager, cameraController, undoManager, this);
 
         cam.setLocation(new Vector3f(0, cameraController.getCurrentZoom(), 0));
         cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
@@ -78,7 +85,7 @@ public class WareSkladInit extends SimpleApplication {
 
         floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager);
 
-        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer);
+        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, this);
 
         setupMouseClickListener();
 
@@ -86,6 +93,9 @@ public class WareSkladInit extends SimpleApplication {
 
         uiLinesDrawer = new UILinesDrawer();
         uiLinesDrawer.addLines(this, rootNode);
+
+        geometrySelectionHandler = new GeometrySelectionHandler(floorPlacer);
+        selectionHandlers.put(Geometry.class, geometrySelectionHandler);
 
         initLatch.countDown();
     }
@@ -123,33 +133,100 @@ public class WareSkladInit extends SimpleApplication {
         inputManager.addListener(mouseClickListener, "MouseClick");
     }
 
-    private void selectObject(Spatial object) {
+    public void selectObject(Spatial object) {
+        deselectObject();
+
         selectedObject = object;
+
+        if (object != null) {
+            updateProperties(object);
+            if (objectControls != null) {
+                objectControls.setSelectedObject(object);
+            }
+
+            SelectionHandler handler = selectionHandlers.get(object.getClass());
+            if (handler != null) {
+                handler.handleSelection(object);
+            } else {
+                System.out.println("No handler registered for object of type: " + object.getClass().getSimpleName());
+            }
+        }
+    }
+
+    private void updateProperties(Spatial object) {
+        if (object == null || propertiesPanel == null) {
+            return;
+        }
+
+        Vector3f originalPosition = object.getLocalTranslation().clone();
+        float[] originalAngles = object.getLocalRotation().toAngles(null);
+        Vector3f originalRotation = new Vector3f(originalAngles[0], originalAngles[1], originalAngles[2]);
+        Vector3f originalScale = object.getLocalScale().clone();
+        String originalName = object.getName() != null ? object.getName() : "Unnamed Object";
 
         Vector3f position = object.getLocalTranslation();
         float[] angles = object.getLocalRotation().toAngles(null);
         Vector3f rotation = new Vector3f(angles[0], angles[1], angles[2]);
         Vector3f scale = object.getLocalScale();
-
         String objectName = object.getName() != null ? object.getName() : "Unnamed Object";
 
-        if (propertiesPanel != null) {
-            propertiesPanel.updateProperties(objectName, position, rotation, scale);
+        propertiesPanel.updateProperties(objectName, position, rotation, scale);
 
-            propertiesPanel.setOnNameChange(name -> selectedObject.setName(name));
-            propertiesPanel.setOnPositionChange(pos -> selectedObject.setLocalTranslation(pos));
-            propertiesPanel.setOnRotationChange(rot -> {
-                selectedObject.setLocalRotation(new Quaternion().fromAngles(rot.x, rot.y, rot.z));
-            });
-            propertiesPanel.setOnScaleChange(scl -> selectedObject.setLocalScale(scl));
-        }
+        propertiesPanel.setOnNameChange(name -> {
+            if (selectedObject != null) {
+                String previousName = selectedObject.getName();
+                selectedObject.setName(name);
 
-        if (selectedObject != null) {
-            objectControls.setSelectedObject(object);
-        }
+                undoManager.addAction(new PropertyChangeAction(
+                        selectedObject,
+                        previousName, originalPosition, originalRotation, originalScale,
+                        name, originalPosition, originalRotation, originalScale
+                ));
+            }
+        });
+
+        propertiesPanel.setOnPositionChange(pos -> {
+            if (selectedObject != null) {
+                Vector3f prevPos = selectedObject.getLocalTranslation().clone();
+                selectedObject.setLocalTranslation(pos);
+
+                undoManager.addAction(new PropertyChangeAction(
+                        selectedObject,
+                        originalName, prevPos, originalRotation, originalScale,
+                        originalName, pos, originalRotation, originalScale
+                ));
+            }
+        });
+
+        propertiesPanel.setOnRotationChange(rot -> {
+            if (selectedObject != null) {
+                Vector3f prevRot = new Vector3f(originalAngles[0], originalAngles[1], originalAngles[2]);
+                Quaternion newRotation = new Quaternion().fromAngles(rot.x, rot.y, rot.z);
+                selectedObject.setLocalRotation(newRotation);
+
+                undoManager.addAction(new PropertyChangeAction(
+                        selectedObject,
+                        originalName, originalPosition, prevRot, originalScale,
+                        originalName, originalPosition, rot, originalScale
+                ));
+            }
+        });
+
+        propertiesPanel.setOnScaleChange(scl -> {
+            if (selectedObject != null) {
+                Vector3f prevScale = selectedObject.getLocalScale().clone();
+                selectedObject.setLocalScale(scl);
+
+                undoManager.addAction(new PropertyChangeAction(
+                        selectedObject,
+                        originalName, originalPosition, originalRotation, prevScale,
+                        originalName, originalPosition, originalRotation, scl
+                ));
+            }
+        });
     }
 
-    private void deselectObject() {
+    public void deselectObject() {
         selectedObject = null;
 
         if (propertiesPanel != null) {

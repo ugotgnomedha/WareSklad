@@ -14,10 +14,12 @@ public class InputHandler {
     private static boolean moveLeft, moveRight, moveUp, moveDown;
     private CameraController cameraController;
     private UndoManager undoManager;
+    private WareSkladInit jmeScene;
 
-    public InputHandler(InputManager inputManager, CameraController cameraController, UndoManager undoManager) {
+    public InputHandler(InputManager inputManager, CameraController cameraController, UndoManager undoManager, WareSkladInit jmeScene) {
         this.cameraController = cameraController;
         this.undoManager = undoManager;
+        this.jmeScene = jmeScene;
 
         inputManager.addMapping("MoveLeft", new KeyTrigger(KeyInput.KEY_A));
         inputManager.addMapping("MoveRight", new KeyTrigger(KeyInput.KEY_D));
@@ -40,10 +42,12 @@ public class InputHandler {
             if (!isPressed) {
 
                 if (name.equals("Undo")) {
+                    jmeScene.deselectObject();
                     undoManager.undo();
                 }
 
                 if (name.equals("Redo")) {
+                    jmeScene.deselectObject();
                     undoManager.redo();
                 }
             }

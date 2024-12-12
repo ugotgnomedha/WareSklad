@@ -60,13 +60,23 @@ public class PlannerUI {
         redoAction.addActionListener(e -> jmeScene.undoManager.redo());
         editMenu.add(redoAction);
 
+        JMenu viewMenu = new JMenu("View");
+        JMenuItem twoDimSetting = new JMenuItem("Enter 2D View");
+        twoDimSetting.addActionListener(e -> System.out.println("Enter 2D View clicked"));
+        viewMenu.add(twoDimSetting);
+        JMenuItem threeDimSetting = new JMenuItem("Enter 3D View");
+        threeDimSetting.addActionListener(e -> System.out.println("Enter 3D View clicked"));
+        viewMenu.add(threeDimSetting);
+
         JMenu settingsMenu = new JMenu("Settings");
-        settingsMenu.add(new JMenuItem("Setting 1"));
-        settingsMenu.add(new JMenuItem("Setting 2"));
+        JMenuItem gridSetting = new JMenuItem("Edit Grid Size");
+        gridSetting.addActionListener(e -> System.out.println("Edit Grid Size clicked"));
+        settingsMenu.add(gridSetting);
 
         menuBar.add(projectMenu);
         menuBar.add(editMenu);
         menuBar.add(settingsMenu);
+        menuBar.add(viewMenu);
 
         return menuBar;
     }
@@ -84,6 +94,7 @@ public class PlannerUI {
         Canvas jmeCanvas = ctx.getCanvas();
         jmeCanvas.setPreferredSize(new Dimension(800, 600));
         plannerPanel.add(jmeCanvas, BorderLayout.CENTER);
+        jmeScene.setPauseOnLostFocus(false);
 
         jmeScene.startCanvas();
 
@@ -121,9 +132,6 @@ public class PlannerUI {
     }
 
     private JPanel createLayoutPanel() {
-        JPanel layoutPanel = new JPanel();
-        layoutPanel.setLayout(new BoxLayout(layoutPanel, BoxLayout.Y_AXIS));
-        layoutPanel.setBorder(BorderFactory.createTitledBorder("Layout"));
-        return layoutPanel;
+        return new HierarchyUI(jmeScene, jmeScene.undoManager);
     }
 }

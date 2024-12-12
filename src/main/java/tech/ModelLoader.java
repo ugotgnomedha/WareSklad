@@ -15,12 +15,14 @@ public class ModelLoader {
     private final UndoManager undoManager;
     private final List<String> defaultItemPaths;
     private final FloorPlacer floorPlacer;
+    private WareSkladInit wareSkladInit;
 
-    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer) {
+    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer, WareSkladInit wareSkladInit) {
         this.rootNode = rootNode;
         this.assetManager = assetManager;
         this.undoManager = undoManager;
         this.floorPlacer = floorPlacer;
+        this.wareSkladInit = wareSkladInit;
 
         this.defaultItemPaths = CatalogueLoader.getDefaultModelPaths();
     }
@@ -28,7 +30,7 @@ public class ModelLoader {
     public void loadAndPlaceModel(String modelPath, Vector3f position) {
         if (isDefaultItem(modelPath)) {
             if (modelPath.equals("Models/default_floor01.j3o")) {
-                System.out.println("Floor mode.");
+                wareSkladInit.deselectObject();
                 floorPlacer.setFloorMode(true);
                 return;
             }
