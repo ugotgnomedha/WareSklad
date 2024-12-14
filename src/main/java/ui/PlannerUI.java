@@ -2,6 +2,7 @@ package ui;
 
 import com.jme3.system.JmeCanvasContext;
 import tech.CatalogueLoader;
+import tech.LayersManager;
 import tech.WareSkladInit;
 
 import javax.swing.*;
@@ -11,6 +12,8 @@ public class PlannerUI {
 
     private WareSkladInit jmeScene;
     private PropertiesPanel propertiesPanel = new PropertiesPanel();
+    private LayersManager layersManager = new LayersManager();
+    private GridSettingUI gridSettingUI = new GridSettingUI();
 
     public JFrame createMainFrame() {
         JFrame frame = new JFrame("Planner Application");
@@ -60,17 +63,29 @@ public class PlannerUI {
         redoAction.addActionListener(e -> jmeScene.undoManager.redo());
         editMenu.add(redoAction);
 
+        LayersUI layersUI = new LayersUI(layersManager);
+        JMenu layersMenu = layersUI.createLayersMenu(frame);
+        editMenu.add(layersMenu);
+
         JMenu viewMenu = new JMenu("View");
         JMenuItem twoDimSetting = new JMenuItem("Enter 2D View");
-        twoDimSetting.addActionListener(e -> System.out.println("Enter 2D View clicked"));
+        twoDimSetting.addActionListener(e -> {
+            jmeScene.setTwoDView();
+            System.out.println("Entered 2D View");
+        });
         viewMenu.add(twoDimSetting);
         JMenuItem threeDimSetting = new JMenuItem("Enter 3D View");
-        threeDimSetting.addActionListener(e -> System.out.println("Enter 3D View clicked"));
+        threeDimSetting.addActionListener(e -> {
+            jmeScene.setThreeDView();
+            System.out.println("Entered 3D View");
+        });
         viewMenu.add(threeDimSetting);
 
         JMenu settingsMenu = new JMenu("Settings");
         JMenuItem gridSetting = new JMenuItem("Edit Grid Size");
-        gridSetting.addActionListener(e -> System.out.println("Edit Grid Size clicked"));
+        gridSetting.addActionListener(e -> {
+            gridSettingUI.showGridDialog(frame);
+        });
         settingsMenu.add(gridSetting);
 
         menuBar.add(projectMenu);
@@ -106,13 +121,14 @@ public class PlannerUI {
             Thread.currentThread().interrupt();
         }
 
-        jmeScene.setPropertiesPanel(propertiesPanel);
+        jmeScene.setPropertiesPanel(propertiesPanel, layersManager);
 
         JPanel jmePanel = new JPanel(new BorderLayout());
         jmePanel.add(jmeScene.getCanvas(), BorderLayout.CENTER);
 
         plannerPanel.add(jmePanel, BorderLayout.CENTER);
         propertiesPanel.setObjectControls(jmeScene.objectControls);
+        gridSettingUI.setWareSkladInit(this.jmeScene);
         return plannerPanel;
     }
 

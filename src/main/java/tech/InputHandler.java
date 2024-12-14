@@ -4,10 +4,7 @@ import UndoRedo.UndoManager;
 import com.jme3.input.InputManager;
 import com.jme3.input.KeyInput;
 import com.jme3.input.MouseInput;
-import com.jme3.input.controls.ActionListener;
-import com.jme3.input.controls.AnalogListener;
-import com.jme3.input.controls.KeyTrigger;
-import com.jme3.input.controls.MouseAxisTrigger;
+import com.jme3.input.controls.*;
 
 public class InputHandler {
 
@@ -34,22 +31,31 @@ public class InputHandler {
         inputManager.addMapping("Undo", new KeyTrigger(KeyInput.KEY_Z));
         inputManager.addMapping("Redo", new KeyTrigger(KeyInput.KEY_Y));
         inputManager.addListener(actionListener, "Undo", "Redo");
+
+        inputManager.addMapping("MouseWheelPressed", new MouseButtonTrigger(MouseInput.BUTTON_MIDDLE));
+        inputManager.addListener(actionListener, "MouseWheelPressed");
+        inputManager.addMapping("MouseWheelReleased", new MouseButtonTrigger(MouseInput.BUTTON_MIDDLE));
+        inputManager.addListener(actionListener, "MouseWheelReleased");
     }
 
     private ActionListener actionListener = new ActionListener() {
         @Override
         public void onAction(String name, boolean isPressed, float tpf) {
-            if (!isPressed) {
+            if (name.equals("MouseWheelPressed") && isPressed) {
+                jmeScene.onMouseWheelPressed();
+            }
+            if (name.equals("MouseWheelReleased") && !isPressed) {
+                jmeScene.onMouseWheelReleased();
+            }
 
-                if (name.equals("Undo")) {
-                    jmeScene.deselectObject();
-                    undoManager.undo();
-                }
+            if (name.equals("Undo") && !isPressed) {
+                jmeScene.deselectObject();
+                undoManager.undo();
+            }
 
-                if (name.equals("Redo")) {
-                    jmeScene.deselectObject();
-                    undoManager.redo();
-                }
+            if (name.equals("Redo") && !isPressed) {
+                jmeScene.deselectObject();
+                undoManager.redo();
             }
         }
     };

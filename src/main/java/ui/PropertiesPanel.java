@@ -7,8 +7,12 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Consumer;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Spatial;
+import tech.Layer;
+import tech.LayersManager;
 import tech.ObjectControls;
 
 public class PropertiesPanel extends JPanel {
@@ -28,8 +32,28 @@ public class PropertiesPanel extends JPanel {
     private boolean isTransformFolded = true;
     private ObjectControls objectControls;
 
+    private JComboBox<String> layerDropdown;
+    private JButton addToLayerButton, removeFromLayerButton;
+    private LayersManager layersManager;
+    private Spatial selectedObject;
+    private JLabel currentLayerLabel;
+
     public void setObjectControls(ObjectControls objectControls){
         this.objectControls = objectControls;
+    }
+
+    public void setLayersManager(LayersManager layersManager) {
+        this.layersManager = layersManager;
+    }
+
+    public void setSelectedObject(Spatial object) {
+        this.selectedObject = object;
+
+        String currentLayer = getCurrentLayer();
+        updateCurrentLayerLabel(currentLayerLabel, currentLayer);
+
+        String selectedLayer = (String) layerDropdown.getSelectedItem();
+        updateLayerButtons(selectedLayer);
     }
 
     public PropertiesPanel() {
@@ -46,6 +70,9 @@ public class PropertiesPanel extends JPanel {
 
         JPanel transformPanel = createFoldablePanel("Transform", createTransformPanel());
         add(transformPanel);
+
+        JPanel layersPanel = createFoldablePanel("Layers", createLayersPanel());
+        add(layersPanel);
 
         JCheckBox snapToGridCheckbox = new JCheckBox("Snap to Grid");
         add(snapToGridCheckbox);
@@ -134,6 +161,124 @@ public class PropertiesPanel extends JPanel {
         return transformContent;
     }
 
+    private JPanel createLayersPanel() {
+        JPanel layersContent = new JPanel();
+        layersContent.setLayout(new BoxLayout(layersContent, BoxLayout.Y_AXIS));
+
+        currentLayerLabel = new JLabel("Current Layer: None");
+        layersContent.add(currentLayerLabel);
+
+        layerDropdown = new JComboBox<>();
+        layerDropdown.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        layerDropdown.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+                refreshLayerDropdown();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {}
+
+            @Override
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+        });
+
+        layerDropdown.addActionListener(e -> {
+            String selectedLayer = (String) layerDropdown.getSelectedItem();
+            updateLayerButtons(selectedLayer);
+        });
+
+        layersContent.add(layerDropdown);
+
+        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        addToLayerButton = new JButton("Add Object to Layer");
+        removeFromLayerButton = new JButton("Remove Object from Layer");
+
+        buttonsPanel.add(addToLayerButton);
+        buttonsPanel.add(removeFromLayerButton);
+        layersContent.add(buttonsPanel);
+
+        addToLayerButton.addActionListener(e -> {
+            if (selectedObject == null) {
+                System.out.println("No object selected.");
+                return;
+            }
+
+            String selectedLayer = (String) layerDropdown.getSelectedItem();
+            if (selectedLayer != null && layersManager != null) {
+                String currentLayer = getCurrentLayer();
+                if (currentLayer != null) {
+                    layersManager.removeSpatialFromLayer(currentLayer, selectedObject);
+                    System.out.println("Removed object from current layer: " + currentLayer);
+                }
+
+                layersManager.addSpatialToLayer(selectedLayer, selectedObject);
+                System.out.println("Added object to layer: " + selectedLayer);
+
+                updateCurrentLayerLabel(currentLayerLabel, selectedLayer);
+                updateLayerButtons(selectedLayer);
+            }
+        });
+
+        removeFromLayerButton.addActionListener(e -> {
+            if (selectedObject == null) {
+                System.out.println("No object selected.");
+                return;
+            }
+
+            String selectedLayer = (String) layerDropdown.getSelectedItem();
+            if (selectedLayer != null && layersManager != null) {
+                layersManager.removeSpatialFromLayer(selectedLayer, selectedObject);
+                System.out.println("Removed object from layer: " + selectedLayer);
+
+                updateCurrentLayerLabel(currentLayerLabel, null);
+                updateLayerButtons(null);
+            }
+        });
+
+        updateLayerButtons(null);
+
+        return layersContent;
+    }
+
+    private void refreshLayerDropdown() {
+        if (layersManager != null) {
+            layerDropdown.removeAllItems();
+            layersManager.getAllLayers().keySet().forEach(layerDropdown::addItem);
+        }
+    }
+
+    private void updateLayerButtons(String selectedLayer) {
+        String currentLayer = getCurrentLayer();
+
+        if (currentLayer != null && currentLayer.equals(selectedLayer)) {
+            addToLayerButton.setEnabled(false);
+            removeFromLayerButton.setEnabled(true);
+        } else {
+            addToLayerButton.setEnabled(selectedLayer != null);
+            removeFromLayerButton.setEnabled(false);
+        }
+    }
+
+    private String getCurrentLayer() {
+        if (layersManager != null && selectedObject != null) {
+            for (Map.Entry<String, Layer> entry : layersManager.getAllLayers().entrySet()) {
+                if (entry.getValue().getSpatials().contains(selectedObject)) {
+                    return entry.getKey();
+                }
+            }
+        }
+        return null;
+    }
+
+    private void updateCurrentLayerLabel(JLabel label, String layerName) {
+        if (layerName == null) {
+            label.setText("Current Layer: None");
+        } else {
+            label.setText("Current Layer: " + layerName);
+        }
+    }
 
     public void updateFloorProperties(Float distance, Float area) {
         if (distance != null) {

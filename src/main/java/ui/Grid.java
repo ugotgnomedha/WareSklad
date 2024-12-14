@@ -8,24 +8,35 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.shape.Line;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Grid {
 
-    public static final int GRID_LENGTH = 20;
-    public static final int GRID_WIDTH = 20;
+    public static int GRID_LENGTH = 20;
+    public static int GRID_WIDTH = 20;
     public static final int GRID_SPACING = 10;
-
     public static final float GRID_Y_LEVEL = 0f;
 
     private AssetManager assetManager;
     private Node rootNode;
+
+    private List<Geometry> gridGeometries = new ArrayList<>();
 
     public Grid(AssetManager assetManager, Node rootNode) {
         this.assetManager = assetManager;
         this.rootNode = rootNode;
     }
 
+    public void clearGrid() {
+        for (Geometry geometry : gridGeometries) {
+            rootNode.detachChild(geometry);
+        }
+        gridGeometries.clear();
+    }
+
     public void addGrid() {
-        rootNode.detachAllChildren();
+        clearGrid();
 
         for (int i = -GRID_WIDTH; i <= GRID_WIDTH; i++) {
             if (Math.abs(i) * GRID_SPACING <= GRID_WIDTH * GRID_SPACING) {
@@ -38,6 +49,7 @@ public class Grid {
                 mat.setColor("Color", ColorRGBA.White);
                 verticalGridLine.setMaterial(mat);
                 rootNode.attachChild(verticalGridLine);
+                gridGeometries.add(verticalGridLine);
             }
         }
 
@@ -52,6 +64,7 @@ public class Grid {
                 mat.setColor("Color", ColorRGBA.White);
                 horizontalGridLine.setMaterial(mat);
                 rootNode.attachChild(horizontalGridLine);
+                gridGeometries.add(horizontalGridLine);
             }
         }
     }

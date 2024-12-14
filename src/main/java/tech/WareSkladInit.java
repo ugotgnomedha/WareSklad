@@ -37,6 +37,7 @@ public class WareSkladInit extends SimpleApplication {
     private PropertiesPanel propertiesPanel;
     public ObjectControls objectControls;
     public UndoManager undoManager;
+    private LayersManager layersManager;
 
     private BitmapText cursorInfoText;
     private BitmapText zoomInfoText;
@@ -45,8 +46,15 @@ public class WareSkladInit extends SimpleApplication {
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
 
-    public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
+    private boolean is3DMode = false;
+    private boolean isMouseWheelPressed = false;
+
+    private float mouseX, mouseY;
+
+    public void setPropertiesPanel(PropertiesPanel propertiesPanel, LayersManager layersManager) {
+        this.layersManager = layersManager;
         this.propertiesPanel = propertiesPanel;
+        this.propertiesPanel.setLayersManager(layersManager);
         this.objectControls.setPropertiesPanel(propertiesPanel);
         this.geometrySelectionHandler.setPropertiesPanel(propertiesPanel);
     }
@@ -100,6 +108,67 @@ public class WareSkladInit extends SimpleApplication {
         initLatch.countDown();
     }
 
+    public void setTwoDView() {
+        if (is3DMode) {
+            is3DMode = false;
+            isMouseWheelPressed = false;
+
+            cam.setLocation(new Vector3f(0, 100f, 0));
+            cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+
+            cameraController.setIs3DMode(false);
+        }
+    }
+
+    public void setThreeDView() {
+        if (!is3DMode) {
+            is3DMode = true;
+            isMouseWheelPressed = false;
+
+            cam.setLocation(new Vector3f(100f, cameraController.getCurrentZoom(), 100f));
+            cam.lookAt(new Vector3f(0, 0, 0), Vector3f.UNIT_Y);
+
+            cameraController.setIs3DMode(true);
+
+            Vector2f currentCursorPos = inputManager.getCursorPosition();
+            mouseX = currentCursorPos.x;
+            mouseY = currentCursorPos.y;
+        }
+    }
+
+    public void onMouseWheelPressed() {
+        isMouseWheelPressed = true;
+        inputManager.setCursorVisible(false);
+        mouseX = inputManager.getCursorPosition().x;
+        mouseY = inputManager.getCursorPosition().y;
+    }
+
+    public void onMouseWheelReleased() {
+        isMouseWheelPressed = false;
+        inputManager.setCursorVisible(true);
+    }
+
+    public void updateCameraRotation(float tpf) {
+        if (isMouseWheelPressed && is3DMode) {
+            Vector2f currentCursorPos = inputManager.getCursorPosition();
+            float deltaX = currentCursorPos.x - mouseX;
+            float deltaY = currentCursorPos.y - mouseY;
+
+            cameraController.rotateCamera(deltaX, deltaY);
+
+            mouseX = currentCursorPos.x;
+            mouseY = currentCursorPos.y;
+        }
+
+    }
+
+    public void recreateGridAndLines() {
+        enqueue(() -> {
+            grid.addGrid();
+            uiLinesDrawer.addLines(WareSkladInit.this, rootNode);
+        });
+    }
+
     public void waitForInitialization() throws InterruptedException {
         initLatch.await();
     }
@@ -136,20 +205,28 @@ public class WareSkladInit extends SimpleApplication {
     public void selectObject(Spatial object) {
         deselectObject();
 
-        selectedObject = object;
+        String layerName = layersManager.getLayerForSpatial(object);
 
-        if (object != null) {
-            updateProperties(object);
-            if (objectControls != null) {
-                objectControls.setSelectedObject(object);
-            }
+        if (!layersManager.isLayerEditLocked(layerName)) {
+            selectedObject = object;
 
-            SelectionHandler handler = selectionHandlers.get(object.getClass());
-            if (handler != null) {
-                handler.handleSelection(object);
-            } else {
-                System.out.println("No handler registered for object of type: " + object.getClass().getSimpleName());
+            if (object != null) {
+                updateProperties(object);
+                if (objectControls != null) {
+                    objectControls.setSelectedObject(object);
+                    propertiesPanel.setSelectedObject(selectedObject);
+                }
+
+                SelectionHandler handler = selectionHandlers.get(object.getClass());
+                if (handler != null) {
+                    handler.handleSelection(object);
+                } else {
+                    System.out.println("No handler registered for object of type: " + object.getClass().getSimpleName());
+                }
             }
+        } else {
+            System.out.println("Cannot select object: Layer " + layerName + " is not editable.");
+            propertiesPanel.setSelectedObject(object);
         }
     }
 
@@ -228,6 +305,7 @@ public class WareSkladInit extends SimpleApplication {
 
     public void deselectObject() {
         selectedObject = null;
+        propertiesPanel.setSelectedObject(null);
 
         if (propertiesPanel != null) {
             propertiesPanel.clearPropertiesPanel();
@@ -291,7 +369,8 @@ public class WareSkladInit extends SimpleApplication {
 
     @Override
     public void simpleUpdate(float tpf) {
-        cameraController.updateCameraPosition(tpf);
+        updateCameraRotation(tpf);
+        cameraController.updateCameraPosition(tpf, is3DMode);
 
         Vector2f mousePos = inputManager.getCursorPosition();
 
