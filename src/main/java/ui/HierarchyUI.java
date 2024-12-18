@@ -2,10 +2,9 @@ package ui;
 
 import UndoRedo.UndoManager;
 import UndoRedo.UndoRedoListener;
-import UndoRedo.FloorPlacementAction;
-import UndoRedo.UndoableAction;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
+import tech.FloorPlacer;
 import tech.WareSkladInit;
 
 import javax.swing.*;
@@ -13,17 +12,22 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class HierarchyUI extends JPanel implements UndoRedoListener {
     private final WareSkladInit jmeScene;
     private final UndoManager undoManager;
     private JTree objectTree;
     private DefaultMutableTreeNode rootNode;
+    private FloorPlacer floorPlacer;
 
     public HierarchyUI(WareSkladInit jmeScene, UndoManager undoManager) {
         this.jmeScene = jmeScene;
         this.undoManager = undoManager;
+        this.floorPlacer = jmeScene.floorPlacer;
         initializeUI();
         undoManager.addUndoRedoListener(this);
     }
@@ -68,59 +72,75 @@ public class HierarchyUI extends JPanel implements UndoRedoListener {
 
     @Override
     public void onUndoRedo() {
-        updateObjectTree();
+        jmeScene.enqueue(this::updateObjectTree);
     }
 
     private void updateObjectTree() {
+
         rootNode.removeAllChildren();
         List<Spatial> currentObjects = undoManager.getCurrentSceneObjects();
 
+        Map<Integer, List<Spatial>> floorGeometriesMap = new HashMap<>();
+
         for (Spatial object : currentObjects) {
-            if (object instanceof Geometry && object.getName().equals("CompleteFloor")) {
-                FloorPlacementAction floorAction = findFloorPlacementAction(object);
-                if (floorAction != null) {
-                    DefaultMutableTreeNode floorNode = new DefaultMutableTreeNode("Completed Floor");
-                    for (Spatial segment : floorAction.getFloorGeometries()) {
-                        floorNode.add(new DefaultMutableTreeNode(segment));
-                    }
-                    rootNode.add(floorNode);
+            if (object instanceof Geometry) {
+                int floorId;
+
+                if (object.getName().equals("CompleteFloor")) {
+                    floorId = getFloorIdFromCompleteFloor(object);
+                } else {
+                    floorId = getFloorIdFromSegment(object);
                 }
-            } else if (object instanceof Geometry) {
-                boolean isFloorSegment = false;
-                for (UndoableAction action : undoManager.getUndoStack()) {
-                    if (action instanceof FloorPlacementAction) {
-                        FloorPlacementAction floorAction = (FloorPlacementAction) action;
-                        for (Spatial segment : floorAction.getFloorGeometries()) {
-                            if (segment == object) {
-                                isFloorSegment = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (isFloorSegment) {
-                        break;
-                    }
-                }
-                if (!isFloorSegment) {
-                    DefaultMutableTreeNode node = new DefaultMutableTreeNode(object);
-                    rootNode.add(node);
+
+                if (floorId != -1) {
+                    floorGeometriesMap.computeIfAbsent(floorId, k -> new ArrayList<>()).add(object);
+                } else {
+                    DefaultMutableTreeNode standaloneNode = new DefaultMutableTreeNode(object);
+                    rootNode.add(standaloneNode);
                 }
             }
+        }
+
+        int floorCounter = 1;
+        for (Map.Entry<Integer, List<Spatial>> entry : floorGeometriesMap.entrySet()) {
+            List<Spatial> geometries = entry.getValue();
+
+            String folderName = "Complete Floor " + floorCounter++;
+            DefaultMutableTreeNode floorFolderNode = new DefaultMutableTreeNode(folderName);
+
+            DefaultMutableTreeNode completeFloorNode = null;
+            for (Spatial geometry : geometries) {
+                if (geometry instanceof Geometry && geometry.getName().equals("CompleteFloor")) {
+                    completeFloorNode = new DefaultMutableTreeNode(geometry);
+                } else {
+                    floorFolderNode.add(new DefaultMutableTreeNode(geometry));
+                }
+            }
+
+            if (completeFloorNode != null) {
+                floorFolderNode.add(completeFloorNode);
+            }
+
+            rootNode.add(floorFolderNode);
         }
 
         ((DefaultTreeModel) objectTree.getModel()).reload();
+
     }
 
-    private FloorPlacementAction findFloorPlacementAction(Spatial object) {
-        for (UndoableAction action : undoManager.getUndoStack()) {
-            if (action instanceof FloorPlacementAction) {
-                for (Spatial segment : ((FloorPlacementAction) action).getFloorGeometries()) {
-                    if (segment == object) {
-                        return (FloorPlacementAction) action;
-                    }
-                }
+    private int getFloorIdFromCompleteFloor(Spatial object) {
+        for (Map.Entry<Integer, List<Geometry>> entry : floorPlacer.floorIdToSegments.entrySet()) {
+            if (entry.getValue().contains(object)) {
+                return entry.getKey();
             }
         }
-        return null;
+        return -1;
+    }
+
+    private int getFloorIdFromSegment(Spatial object) {
+        if (object instanceof Geometry) {
+            return floorPlacer.floorSegmentToFloorId.getOrDefault(object, -1);
+        }
+        return -1;
     }
 }

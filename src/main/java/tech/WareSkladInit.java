@@ -38,11 +38,12 @@ public class WareSkladInit extends SimpleApplication {
     public ObjectControls objectControls;
     public UndoManager undoManager;
     private LayersManager layersManager;
+    public DeleteObject deleteObject;
 
     private BitmapText cursorInfoText;
     private BitmapText zoomInfoText;
 
-    private FloorPlacer floorPlacer;
+    public FloorPlacer floorPlacer;
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
 
@@ -90,6 +91,8 @@ public class WareSkladInit extends SimpleApplication {
         this.setDisplayFps(false);
 
         objectControls = new ObjectControls(inputManager, assetManager, rootNode, cam, undoManager);
+
+        deleteObject = new DeleteObject(this, rootNode);
 
         floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager);
 
@@ -251,54 +254,63 @@ public class WareSkladInit extends SimpleApplication {
 
         propertiesPanel.setOnNameChange(name -> {
             if (selectedObject != null) {
-                String previousName = selectedObject.getName();
-                selectedObject.setName(name);
+                enqueue(() -> {
+                    String previousName = selectedObject.getName();
+                    selectedObject.setName(name);
 
-                undoManager.addAction(new PropertyChangeAction(
-                        selectedObject,
-                        previousName, originalPosition, originalRotation, originalScale,
-                        name, originalPosition, originalRotation, originalScale
-                ));
+                    undoManager.addAction(new PropertyChangeAction(
+                            selectedObject,
+                            previousName, originalPosition, originalRotation, originalScale,
+                            name, originalPosition, originalRotation, originalScale
+                    ));
+                });
             }
         });
 
         propertiesPanel.setOnPositionChange(pos -> {
             if (selectedObject != null) {
-                Vector3f prevPos = selectedObject.getLocalTranslation().clone();
-                selectedObject.setLocalTranslation(pos);
+                enqueue(() -> {
+                    Vector3f prevPos = selectedObject.getLocalTranslation().clone();
+                    selectedObject.setLocalTranslation(pos);
 
-                undoManager.addAction(new PropertyChangeAction(
-                        selectedObject,
-                        originalName, prevPos, originalRotation, originalScale,
-                        originalName, pos, originalRotation, originalScale
-                ));
+                    undoManager.addAction(new PropertyChangeAction(
+                            selectedObject,
+                            originalName, prevPos, originalRotation, originalScale,
+                            originalName, pos, originalRotation, originalScale
+                    ));
+                });
             }
         });
 
         propertiesPanel.setOnRotationChange(rot -> {
             if (selectedObject != null) {
-                Vector3f prevRot = new Vector3f(originalAngles[0], originalAngles[1], originalAngles[2]);
-                Quaternion newRotation = new Quaternion().fromAngles(rot.x, rot.y, rot.z);
-                selectedObject.setLocalRotation(newRotation);
+                enqueue(() -> {
+                    Vector3f prevRot = new Vector3f(originalAngles[0], originalAngles[1], originalAngles[2]);
+                    Quaternion newRotation = new Quaternion().fromAngles(rot.x, rot.y, rot.z);
+                    selectedObject.setLocalRotation(newRotation);
 
-                undoManager.addAction(new PropertyChangeAction(
-                        selectedObject,
-                        originalName, originalPosition, prevRot, originalScale,
-                        originalName, originalPosition, rot, originalScale
-                ));
+                    undoManager.addAction(new PropertyChangeAction(
+                            selectedObject,
+                            originalName, originalPosition, prevRot, originalScale,
+                            originalName, originalPosition, rot, originalScale
+                    ));
+                });
             }
         });
 
         propertiesPanel.setOnScaleChange(scl -> {
             if (selectedObject != null) {
-                Vector3f prevScale = selectedObject.getLocalScale().clone();
-                selectedObject.setLocalScale(scl);
+                enqueue(() -> {
+                    Vector3f prevScale = selectedObject.getLocalScale().clone();
+                    selectedObject.setLocalScale(scl);
 
-                undoManager.addAction(new PropertyChangeAction(
-                        selectedObject,
-                        originalName, originalPosition, originalRotation, prevScale,
-                        originalName, originalPosition, originalRotation, scl
-                ));
+                    undoManager.addAction(new PropertyChangeAction(
+                            selectedObject,
+                            originalName, originalPosition, originalRotation, prevScale,
+                            originalName, originalPosition, originalRotation, scl
+                    ));
+                    return null;
+                });
             }
         });
     }

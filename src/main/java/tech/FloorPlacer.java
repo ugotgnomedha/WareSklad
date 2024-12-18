@@ -38,14 +38,22 @@ public class FloorPlacer {
     public List<Geometry> floorSegmentGeometries = new ArrayList<>();
     private Geometry previewFloorGeometry = null;
 
-    private static final float FLOOR_THICKNESS = 0.5f;
+    private final float FLOOR_THICKNESS = 0.5f;
 
     private boolean floorMode = false;
 
     private Node measurementNode;
 
-    private Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
-    private Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
+    public Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
+    public Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
+    public Map<Integer, Vector3f> completeFloorCenters = new HashMap<>();
+
+    public Map<Geometry, Integer> floorSegmentToFloorId = new HashMap<>();
+    public Map<Integer, List<Geometry>> floorIdToSegments = new HashMap<>();
+    public Map<Geometry, List<Vector3f>> floorSegmentVertices = new HashMap<>();
+    public Map<Geometry, List<Vector3f>> completeFloorVertices = new HashMap<>();
+
+    private Random random = new Random();
 
     public FloorPlacer(Node rootNode, AssetManager assetManager, InputManager inputManager, Camera cam, UndoManager undoManager) {
         this.rootNode = rootNode;
@@ -61,6 +69,10 @@ public class FloorPlacer {
 
     public boolean isFloorMode() {
         return floorMode;
+    }
+
+    public List<Vector3f> getFloorPoints() {
+        return floorPoints;
     }
 
     public void setFloorMode(boolean floorMode) {
@@ -130,7 +142,7 @@ public class FloorPlacer {
         return new Vector3f(snappedX, Grid.GRID_Y_LEVEL, snappedZ);
     }
 
-    private void placeFloorSegment(Vector3f start, Vector3f end) {
+    public void placeFloorSegment(Vector3f start, Vector3f end) {
         Vector3f direction = end.subtract(start);
         float length = direction.length();
         direction.normalizeLocal();
@@ -154,12 +166,21 @@ public class FloorPlacer {
         rootNode.attachChild(floorGeometry);
         floorSegmentGeometries.add(floorGeometry);
 
-        float segmentDistance = showMeasurements(false);
+        floorSegmentToFloorId.put(floorGeometry, -1);
 
+        Vector3f[] segmentVertices = {
+                start,
+                new Vector3f(end.x, start.y, start.z),
+                end,
+                new Vector3f(start.x, start.y, end.z)
+        };
+        floorSegmentVertices.put(floorGeometry, Arrays.asList(segmentVertices));
+
+        float segmentDistance = showMeasurements(false);
         floorSegmentDistances.put(floorGeometry, segmentDistance);
     }
 
-    private void createCompleteFloor() {
+    public void createCompleteFloor() {
         if (floorPoints.size() < 3) {
             floorPoints.clear();
             startPoint = null;
@@ -191,12 +212,26 @@ public class FloorPlacer {
         floorGeometry.setLocalTranslation(center.setY(Grid.GRID_Y_LEVEL));
         rootNode.attachChild(floorGeometry);
 
+        completeFloorVertices.put(floorGeometry, Arrays.asList(vertices));
+
+        int floorId = random.nextInt(90000) + 10000;
+        floorIdToSegments.put(floorId, new ArrayList<>());
+
+        floorSegmentToFloorId.put(floorGeometry, floorId);
+        floorIdToSegments.get(floorId).add(floorGeometry);
+
+        for (Geometry segment : floorSegmentGeometries) {
+            floorSegmentToFloorId.put(segment, floorId);
+            floorIdToSegments.get(floorId).add(segment);
+        }
+
+        completeFloorCenters.put(floorId, center);
+
         List<Geometry> floorGeometriesCopy = new ArrayList<>(floorSegmentGeometries);
         floorGeometriesCopy.add(floorGeometry);
         undoManager.addAction(new FloorPlacementAction(floorGeometriesCopy, rootNode));
 
         float floorArea = showMeasurements(true);
-
         floorCompleteAreas.put(floorGeometry, floorArea);
 
         floorSegmentGeometries.clear();
@@ -209,7 +244,7 @@ public class FloorPlacer {
         }
     }
 
-    private Vector3f calculateCenter(List<Vector3f> points) {
+    public Vector3f calculateCenter(List<Vector3f> points) {
         Vector3f center = new Vector3f(0, 0, 0);
         for (Vector3f point : points) {
             center.addLocal(point);
@@ -218,7 +253,7 @@ public class FloorPlacer {
         return snapToGrid(center);
     }
 
-    private int[] triangulate(Vector3f[] vertices) {
+    public int[] triangulate(Vector3f[] vertices) {
         List<Integer> indices = new ArrayList<>();
         int n = vertices.length;
 

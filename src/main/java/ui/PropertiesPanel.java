@@ -9,8 +9,10 @@ import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
+
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
+import tech.DeleteObject;
 import tech.Layer;
 import tech.LayersManager;
 import tech.ObjectControls;
@@ -24,6 +26,8 @@ public class PropertiesPanel extends JPanel {
 
     private JLabel floorSegmentDistanceLabel, floorCompleteAreaLabel;
 
+    private JButton deleteButton;
+
     private Consumer<String> onNameChange;
     private Consumer<Vector3f> onPositionChange;
     private Consumer<Vector3f> onRotationChange;
@@ -31,6 +35,7 @@ public class PropertiesPanel extends JPanel {
 
     private boolean isTransformFolded = true;
     private ObjectControls objectControls;
+    private DeleteObject deleteObject;
 
     private JComboBox<String> layerDropdown;
     private JButton addToLayerButton, removeFromLayerButton;
@@ -38,8 +43,12 @@ public class PropertiesPanel extends JPanel {
     private Spatial selectedObject;
     private JLabel currentLayerLabel;
 
-    public void setObjectControls(ObjectControls objectControls){
+    public void setObjectControls(ObjectControls objectControls) {
         this.objectControls = objectControls;
+    }
+
+    public void setDeleteObject(DeleteObject deleteObject) {
+        this.deleteObject = deleteObject;
     }
 
     public void setLayersManager(LayersManager layersManager) {
@@ -54,6 +63,8 @@ public class PropertiesPanel extends JPanel {
 
         String selectedLayer = (String) layerDropdown.getSelectedItem();
         updateLayerButtons(selectedLayer);
+
+        deleteButton.setEnabled(selectedObject != null);
     }
 
     public PropertiesPanel() {
@@ -82,6 +93,21 @@ public class PropertiesPanel extends JPanel {
         heightAdjustmentCheckbox.setSelected(true);
         add(heightAdjustmentCheckbox);
         heightAdjustmentCheckbox.addActionListener(e -> objectControls.setHeightAdjustment(heightAdjustmentCheckbox.isSelected()));
+
+        deleteButton = new JButton("Delete");
+        deleteButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        deleteButton.setEnabled(false);
+        deleteButton.addActionListener(e -> {
+            if (selectedObject != null) {
+                deleteObject.delete(selectedObject);
+                objectControls.setSelectedObject(null);
+                clearPropertiesPanel();
+                System.out.println("Object deleted.");
+            } else {
+                System.out.println("No object selected.");
+            }
+        });
+        add(deleteButton);
 
         add(Box.createVerticalGlue());
 
@@ -178,10 +204,12 @@ public class PropertiesPanel extends JPanel {
             }
 
             @Override
-            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {}
+            public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {
+            }
 
             @Override
-            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+            public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {
+            }
         });
 
         layerDropdown.addActionListener(e -> {
@@ -385,17 +413,17 @@ public class PropertiesPanel extends JPanel {
 
     public void updateProperties(String name, Vector3f position, Vector3f rotation, Vector3f scale) {
         nameField.setText(name);
-        positionXField.setText(String.format(Locale.US, "%.2f",position.x));
-        positionYField.setText(String.format(Locale.US, "%.2f",position.y));
-        positionZField.setText(String.format(Locale.US, "%.2f",position.z));
+        positionXField.setText(String.format(Locale.US, "%.2f", position.x));
+        positionYField.setText(String.format(Locale.US, "%.2f", position.y));
+        positionZField.setText(String.format(Locale.US, "%.2f", position.z));
 
         rotationXField.setText(String.format(Locale.US, "%.2f", Math.toDegrees(rotation.x)));
         rotationYField.setText(String.format(Locale.US, "%.2f", Math.toDegrees(rotation.y)));
         rotationZField.setText(String.format(Locale.US, "%.2f", Math.toDegrees(rotation.z)));
 
         scaleXField.setText(String.format(Locale.US, "%.2f", scale.x));
-        scaleYField.setText(String.format(Locale.US, "%.2f",scale.y));
-        scaleZField.setText(String.format(Locale.US, "%.2f",scale.z));
+        scaleYField.setText(String.format(Locale.US, "%.2f", scale.y));
+        scaleZField.setText(String.format(Locale.US, "%.2f", scale.z));
     }
 
     public void clearPropertiesPanel() {

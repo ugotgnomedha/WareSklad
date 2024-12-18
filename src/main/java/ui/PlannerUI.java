@@ -1,12 +1,11 @@
 package ui;
 
 import com.jme3.system.JmeCanvasContext;
-import tech.CatalogueLoader;
-import tech.LayersManager;
-import tech.WareSkladInit;
+import tech.*;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class PlannerUI {
 
@@ -14,6 +13,8 @@ public class PlannerUI {
     private PropertiesPanel propertiesPanel = new PropertiesPanel();
     private LayersManager layersManager = new LayersManager();
     private GridSettingUI gridSettingUI = new GridSettingUI();
+    private ProjectSaver projectSaver;
+    private ProjectLoader projectLoader;
 
     public JFrame createMainFrame() {
         JFrame frame = new JFrame("Planner Application");
@@ -48,10 +49,34 @@ public class PlannerUI {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu projectMenu = new JMenu("Project");
+        JMenuItem openItem = new JMenuItem("Open");
+        openItem.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Open Project File");
+            int userChoice = fileChooser.showOpenDialog(frame);
+            if (userChoice == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                projectLoader.loadProject(selectedFile.getAbsolutePath());
+            }
+        });
+
         JMenuItem saveItem = new JMenuItem("Save");
-        saveItem.addActionListener(e -> System.out.println("Save clicked"));
+        saveItem.addActionListener(e -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Save Project File");
+            fileChooser.setApproveButtonText("Save");
+            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+
+            int userChoice = fileChooser.showSaveDialog(frame);
+            if (userChoice == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                String filePath = selectedFile.getAbsolutePath();
+                projectSaver.saveProject(filePath);
+            }
+        });
         JMenuItem closeItem = new JMenuItem("Close");
         closeItem.addActionListener(e -> System.exit(0));
+        projectMenu.add(openItem);
         projectMenu.add(saveItem);
         projectMenu.add(closeItem);
 
@@ -128,7 +153,10 @@ public class PlannerUI {
 
         plannerPanel.add(jmePanel, BorderLayout.CENTER);
         propertiesPanel.setObjectControls(jmeScene.objectControls);
+        propertiesPanel.setDeleteObject(jmeScene.deleteObject);
         gridSettingUI.setWareSkladInit(this.jmeScene);
+        projectSaver = new ProjectSaver(jmeScene.undoManager, jmeScene.modelLoader, jmeScene.floorPlacer);
+        projectLoader = new ProjectLoader(jmeScene.undoManager, jmeScene.getAssetManager(), jmeScene);
         return plannerPanel;
     }
 

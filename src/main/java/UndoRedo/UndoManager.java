@@ -21,6 +21,9 @@ public class UndoManager {
         } else if (action instanceof FloorPlacementAction) {
             FloorPlacementAction floorAction = (FloorPlacementAction) action;
             sceneObjects.addAll(floorAction.getFloorGeometries());
+        } else if (action instanceof DeleteAction) {
+            DeleteAction deleteAction = (DeleteAction) action;
+            sceneObjects.remove(deleteAction.getDeletedObject());
         }
 
         notifyListeners();
@@ -36,6 +39,8 @@ public class UndoManager {
                 sceneObjects.remove(((ModelLoadAction) action).getModel());
             } else if (action instanceof FloorPlacementAction) {
                 sceneObjects.removeAll(((FloorPlacementAction) action).getFloorGeometries());
+            } else if (action instanceof DeleteAction) {
+                sceneObjects.add(((DeleteAction) action).getDeletedObject());
             }
 
             notifyListeners();
@@ -52,6 +57,8 @@ public class UndoManager {
                 sceneObjects.add(((ModelLoadAction) action).getModel());
             } else if (action instanceof FloorPlacementAction) {
                 sceneObjects.addAll(((FloorPlacementAction) action).getFloorGeometries());
+            } else if (action instanceof DeleteAction) {
+                sceneObjects.remove(((DeleteAction) action).getDeletedObject());
             }
 
             notifyListeners();
@@ -62,7 +69,7 @@ public class UndoManager {
         listeners.add(listener);
     }
 
-    private void notifyListeners() {
+    public void notifyListeners() {
         for (UndoRedoListener listener : listeners) {
             listener.onUndoRedo();
         }
@@ -72,8 +79,13 @@ public class UndoManager {
         return new ArrayList<>(sceneObjects);
     }
 
+    public void setSceneObjects(List<Spatial> objects) {
+        this.sceneObjects = objects;
+        System.out.println();
+        notifyListeners();
+    }
+
     public Stack<UndoableAction> getUndoStack() {
         return undoStack;
     }
-
 }

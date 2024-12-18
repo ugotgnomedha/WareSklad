@@ -8,10 +8,9 @@
       ]
     },
     {
-      "name": "Folder 2",
+      "name": "Racking Systems",
       "items": [
-        { "name": "Pyramid", "itemImage": "Textures/Images/Items/pyramid01.png", "modelPath": "Models/TestModels/pyramid01.j3o" },
-        { "name": "Cylinder", "itemImage": "Textures/Images/Items/cylinder01.png", "modelPath": "Models/TestModels/cylinder01.j3o" }
+        { "name": "Rack01", "itemImage": "Textures/Images/Items/rack01.png", "modelPath": "Models/RacksShelves/racking01.j3o" }
       ]
     },
     {
