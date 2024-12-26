@@ -148,6 +148,8 @@ public class ProjectLoader {
 
         floorPlacer.floorSegmentDistances.put(lineGeometry, length);
 
+        floorPlacer.floorSegmentVertices.put(lineGeometry, vertices);
+
         rootNode.attachChild(lineGeometry);
 
         return lineGeometry;
@@ -196,7 +198,10 @@ public class ProjectLoader {
         floorPlacer.floorCompleteAreas.put(floorGeometry, area);
 
         int floorId = objectJson.get("floorId").getAsInt();
+        floorPlacer.floorSegmentToFloorId.put(floorGeometry, floorId);
         floorPlacer.floorIdToSegments.computeIfAbsent(floorId, k -> new ArrayList<>()).add(floorGeometry);
+        floorPlacer.completeFloorVertices.put(floorGeometry, floorVertices);
+        floorPlacer.completeFloorCenters.put(floorId, center);
 
         rootNode.attachChild(floorGeometry);
 

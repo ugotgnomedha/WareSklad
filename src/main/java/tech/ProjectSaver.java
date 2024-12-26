@@ -1,23 +1,17 @@
 package tech;
 
+import UndoRedo.UndoManager;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.jme3.material.Material;
-import com.jme3.material.MatParam;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
-import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.texture.Texture;
-import UndoRedo.UndoManager;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 
 public class ProjectSaver {
     private final UndoManager undoManager;

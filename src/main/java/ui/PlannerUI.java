@@ -49,16 +49,16 @@ public class PlannerUI {
         JMenuBar menuBar = new JMenuBar();
 
         JMenu projectMenu = new JMenu("Project");
-        JMenuItem openItem = new JMenuItem("Open");
-        openItem.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Open Project File");
-            int userChoice = fileChooser.showOpenDialog(frame);
-            if (userChoice == JFileChooser.APPROVE_OPTION) {
-                File selectedFile = fileChooser.getSelectedFile();
-                projectLoader.loadProject(selectedFile.getAbsolutePath());
-            }
-        });
+//        JMenuItem openItem = new JMenuItem("Open");
+//        openItem.addActionListener(e -> {
+//            JFileChooser fileChooser = new JFileChooser();
+//            fileChooser.setDialogTitle("Open Project File");
+//            int userChoice = fileChooser.showOpenDialog(frame);
+//            if (userChoice == JFileChooser.APPROVE_OPTION) {
+//                File selectedFile = fileChooser.getSelectedFile();
+//                projectLoader.loadProject(selectedFile.getAbsolutePath());
+//            }
+//        });
 
         JMenuItem saveItem = new JMenuItem("Save");
         saveItem.addActionListener(e -> {
@@ -67,16 +67,49 @@ public class PlannerUI {
             fileChooser.setApproveButtonText("Save");
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
+            String fileName = "";
+            if (ProjectsView.CURRENT_PROJECT_NAME != null) {
+                fileName = ProjectsView.CURRENT_PROJECT_NAME.replace(".json", "");
+            }
+            fileChooser.setSelectedFile(new File(fileName));
             int userChoice = fileChooser.showSaveDialog(frame);
             if (userChoice == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 String filePath = selectedFile.getAbsolutePath();
                 projectSaver.saveProject(filePath);
+                ProjectsView.CURRENT_PROJECT_PATH = filePath;
+
+                String projectInfo = ProjectsView.CURRENT_PROJECT_NAME + " - " + ProjectsView.CURRENT_PROJECT_PATH;
+                boolean projectExists = false;
+                for (int i = 0; i < ProjectsView.projectListModel.size(); i++) {
+                    if (ProjectsView.projectListModel.get(i).contains(ProjectsView.CURRENT_PROJECT_NAME)) {
+                        ProjectsView.projectListModel.set(i, projectInfo);
+                        projectExists = true;
+                        break;
+                    }
+                }
+                if (!projectExists) {
+                    ProjectsView.projectListModel.addElement(projectInfo);
+                }
+
+                ProjectsView.saveRecentProjects();
             }
         });
         JMenuItem closeItem = new JMenuItem("Close");
-        closeItem.addActionListener(e -> System.exit(0));
-        projectMenu.add(openItem);
+        closeItem.addActionListener(e -> {
+            shutdownJme();
+            frame.dispose();
+            SwingUtilities.invokeLater(() -> {
+                ProjectsView projectsView = new ProjectsView();
+                JFrame projectsFrame = new JFrame("Projects View");
+                projectsFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                projectsFrame.setSize(600, 400);
+                projectsFrame.add(projectsView.createProjectsPanel());
+                projectsFrame.setVisible(true);
+            });
+        });
+
+//        projectMenu.add(openItem);
         projectMenu.add(saveItem);
         projectMenu.add(closeItem);
 
@@ -174,6 +207,18 @@ public class PlannerUI {
         assetsUI.loadCatalogue(catalogue);
 
         return assetsPanel;
+    }
+
+    public void loadProject(String absolutePath) {
+        projectLoader.loadProject(absolutePath);
+    }
+
+    public void shutdownJme() {
+        if (jmeScene != null) {
+            jmeScene.stopCanvas();
+
+            jmeScene.cleanup();
+        }
     }
 
     private JPanel createLayoutPanel() {

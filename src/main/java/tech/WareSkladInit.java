@@ -409,4 +409,18 @@ public class WareSkladInit extends SimpleApplication {
 
         measureTool.updateMeasureToolPreview();
     }
+
+    public void cleanup() {
+        if (getContext() != null) {
+            this.getCanvas().setVisible(false);
+            getContext().setSystemListener(null);
+        }
+    }
+
+    public void stopCanvas() {
+        if (getContext() != null) {
+            this.getCanvas().setVisible(false);
+            this.stop();
+        }
+    }
 }

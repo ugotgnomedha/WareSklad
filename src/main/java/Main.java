@@ -1,5 +1,5 @@
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
-import ui.PlannerUI;
+import ui.ProjectsView;
 
 import javax.swing.*;
 
@@ -13,9 +13,14 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() -> {
-            PlannerUI plannerUI = new PlannerUI();
-            JFrame frame = plannerUI.createMainFrame();
-            plannerUI.initializeUI(frame);
+            ProjectsView projectsView = new ProjectsView();
+            JPanel projectsPanel = projectsView.createProjectsPanel();
+
+            JFrame frame = new JFrame("Projects View");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(600, 400);
+            frame.setLocationRelativeTo(null);
+            frame.setContentPane(projectsPanel);
             frame.setVisible(true);
         });
     }
