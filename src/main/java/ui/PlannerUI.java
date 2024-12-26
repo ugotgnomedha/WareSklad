@@ -153,6 +153,7 @@ public class PlannerUI {
 
         plannerPanel.add(jmePanel, BorderLayout.CENTER);
         propertiesPanel.setObjectControls(jmeScene.objectControls);
+        propertiesPanel.setMeasureTool(jmeScene.measureTool);
         propertiesPanel.setDeleteObject(jmeScene.deleteObject);
         gridSettingUI.setWareSkladInit(this.jmeScene);
         projectSaver = new ProjectSaver(jmeScene.undoManager, jmeScene.modelLoader, jmeScene.floorPlacer);

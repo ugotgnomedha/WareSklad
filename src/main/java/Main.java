@@ -1,3 +1,4 @@
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import ui.PlannerUI;
 
 import javax.swing.*;
@@ -6,7 +7,7 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.setLookAndFeel(new FlatMacLightLaf());
         } catch (Exception e) {
             e.printStackTrace();
         }

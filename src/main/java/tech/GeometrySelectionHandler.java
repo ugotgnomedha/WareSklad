@@ -33,7 +33,17 @@ public class GeometrySelectionHandler implements SelectionHandler {
             }
 
             if (propertiesPanel != null) {
-                propertiesPanel.updateFloorProperties(distance, area);
+                if (distance != null) {
+                    propertiesPanel.updateDynamicSectionToFloorSegmentProperties(distance);
+                } else if (area != null) {
+                    propertiesPanel.updateDynamicSectionToCompleteFloorProperties(area);
+                } else {
+                    propertiesPanel.updateDynamicSectionToDefaultProperties(selectedGeometry);
+                }
+            }
+        } else {
+            if (propertiesPanel != null) {
+                propertiesPanel.updateDynamicSectionToDefaultProperties(object);
             }
         }
     }

@@ -12,10 +12,7 @@ import java.util.function.Consumer;
 
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
-import tech.DeleteObject;
-import tech.Layer;
-import tech.LayersManager;
-import tech.ObjectControls;
+import tech.*;
 
 public class PropertiesPanel extends JPanel {
 
@@ -23,8 +20,6 @@ public class PropertiesPanel extends JPanel {
     private JTextField positionXField, positionYField, positionZField;
     private JTextField rotationXField, rotationYField, rotationZField;
     private JTextField scaleXField, scaleYField, scaleZField;
-
-    private JLabel floorSegmentDistanceLabel, floorCompleteAreaLabel;
 
     private JButton deleteButton;
 
@@ -35,6 +30,7 @@ public class PropertiesPanel extends JPanel {
 
     private boolean isTransformFolded = true;
     private ObjectControls objectControls;
+    private MeasureTool measureTool;
     private DeleteObject deleteObject;
 
     private JComboBox<String> layerDropdown;
@@ -43,8 +39,14 @@ public class PropertiesPanel extends JPanel {
     private Spatial selectedObject;
     private JLabel currentLayerLabel;
 
+    private JPanel dynamicSection;
+
     public void setObjectControls(ObjectControls objectControls) {
         this.objectControls = objectControls;
+    }
+
+    public void setMeasureTool(MeasureTool measureTool){
+        this.measureTool = measureTool;
     }
 
     public void setDeleteObject(DeleteObject deleteObject) {
@@ -82,12 +84,23 @@ public class PropertiesPanel extends JPanel {
         JPanel transformPanel = createFoldablePanel("Transform", createTransformPanel());
         add(transformPanel);
 
+        dynamicSection = new JPanel();
+        dynamicSection.setLayout(new BoxLayout(dynamicSection, BoxLayout.Y_AXIS));
+        add(dynamicSection, BorderLayout.CENTER);
+
         JPanel layersPanel = createFoldablePanel("Layers", createLayersPanel());
         add(layersPanel);
 
         JCheckBox snapToGridCheckbox = new JCheckBox("Snap to Grid");
         add(snapToGridCheckbox);
-        snapToGridCheckbox.addActionListener(e -> objectControls.setSnapToGrid(snapToGridCheckbox.isSelected()));
+        snapToGridCheckbox.addActionListener(e -> {
+            measureTool.setSnapping(snapToGridCheckbox.isSelected());
+            objectControls.setSnapToGrid(snapToGridCheckbox.isSelected());
+        });
+
+        JCheckBox stackingCheckbox = new JCheckBox("Stacking");
+        add(stackingCheckbox);
+        stackingCheckbox.addActionListener(e -> objectControls.setStackingObjects(stackingCheckbox.isSelected()));
 
         JCheckBox heightAdjustmentCheckbox = new JCheckBox("Height Adjustment");
         heightAdjustmentCheckbox.setSelected(true);
@@ -170,14 +183,6 @@ public class PropertiesPanel extends JPanel {
 
         JPanel floorInfoPanel = new JPanel();
         floorInfoPanel.setLayout(new BoxLayout(floorInfoPanel, BoxLayout.Y_AXIS));
-
-        floorInfoPanel.add(new JLabel("Floor Segment Distance (m):"));
-        floorSegmentDistanceLabel = new JLabel("-");
-        floorInfoPanel.add(floorSegmentDistanceLabel);
-
-        floorInfoPanel.add(new JLabel("Complete Floor Area (m²):"));
-        floorCompleteAreaLabel = new JLabel("-");
-        floorInfoPanel.add(floorCompleteAreaLabel);
 
         gbc.gridx = 0;
         gbc.gridy = 3;
@@ -308,20 +313,6 @@ public class PropertiesPanel extends JPanel {
         }
     }
 
-    public void updateFloorProperties(Float distance, Float area) {
-        if (distance != null) {
-            floorSegmentDistanceLabel.setText(String.format("%.2f", distance));
-        } else {
-            floorSegmentDistanceLabel.setText("-");
-        }
-
-        if (area != null) {
-            floorCompleteAreaLabel.setText(String.format("%.2f", area));
-        } else {
-            floorCompleteAreaLabel.setText("-");
-        }
-    }
-
     private JPanel createFoldablePanel(String title, JPanel contentPanel) {
         JPanel foldablePanel = new JPanel();
         foldablePanel.setLayout(new BoxLayout(foldablePanel, BoxLayout.Y_AXIS));
@@ -402,13 +393,37 @@ public class PropertiesPanel extends JPanel {
                     float z = Float.parseFloat(zField.getText());
                     callback.accept(new Vector3f(x, y, z));
                 } catch (NumberFormatException ex) {
-                    // Handle invalid input.
                 }
             }
         };
         xField.addKeyListener(adapter);
         yField.addKeyListener(adapter);
         zField.addKeyListener(adapter);
+    }
+
+    public void updateDynamicSectionToFloorSegmentProperties(float distance) {
+        dynamicSection.removeAll();
+        dynamicSection.add(new JLabel("Segment Distance (m): " + String.format("%.2f", distance)));
+        dynamicSection.revalidate();
+        dynamicSection.repaint();
+    }
+
+    public void updateDynamicSectionToCompleteFloorProperties(float area) {
+        dynamicSection.removeAll();
+        dynamicSection.add(new JLabel("Complete Area (m²): " + String.format("%.2f", area)));
+        dynamicSection.revalidate();
+        dynamicSection.repaint();
+    }
+
+    public void updateDynamicSectionToDefaultProperties(Spatial object) {
+        dynamicSection.removeAll();
+        if (object != null) {
+            //dynamicSection.add(new JLabel("Object Name: " + object.getName()));
+        } else {
+            //dynamicSection.add(new JLabel("No object selected."));
+        }
+        dynamicSection.revalidate();
+        dynamicSection.repaint();
     }
 
     public void updateProperties(String name, Vector3f position, Vector3f rotation, Vector3f scale) {

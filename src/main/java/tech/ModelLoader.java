@@ -18,15 +18,17 @@ public class ModelLoader {
     private final UndoManager undoManager;
     private final List<String> defaultItemPaths;
     private final FloorPlacer floorPlacer;
+    private final MeasureTool measureTool;
     private final WareSkladInit wareSkladInit;
 
     private final Map<Spatial, String> modelPathsMap;
 
-    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer, WareSkladInit wareSkladInit) {
+    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer, MeasureTool measureTool, WareSkladInit wareSkladInit) {
         this.rootNode = rootNode;
         this.assetManager = assetManager;
         this.undoManager = undoManager;
         this.floorPlacer = floorPlacer;
+        this.measureTool = measureTool;
         this.wareSkladInit = wareSkladInit;
         this.modelPathsMap = new HashMap<>();
         this.defaultItemPaths = CatalogueLoader.getDefaultModelPaths();
@@ -37,6 +39,10 @@ public class ModelLoader {
             if (modelPath.equals("Models/default_floor01.j3o")) {
                 wareSkladInit.deselectObject();
                 floorPlacer.setFloorMode(true);
+                return;
+            } else if (modelPath.equals("Models/default_measureTool01.j3o")){
+                wareSkladInit.deselectObject();
+                measureTool.setMeasureMode(true);
                 return;
             }
 

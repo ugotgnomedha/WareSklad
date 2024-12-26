@@ -44,6 +44,7 @@ public class WareSkladInit extends SimpleApplication {
     private BitmapText zoomInfoText;
 
     public FloorPlacer floorPlacer;
+    public MeasureTool measureTool;
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
 
@@ -96,7 +97,9 @@ public class WareSkladInit extends SimpleApplication {
 
         floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager);
 
-        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, this);
+        measureTool = new MeasureTool(rootNode, assetManager, inputManager, cam);
+
+        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, measureTool, this);
 
         setupMouseClickListener();
 
@@ -403,5 +406,7 @@ public class WareSkladInit extends SimpleApplication {
         zoomInfoText.setText("Zoom: " + cameraController.getCurrentZoom());
 
         floorPlacer.updatePreview();
+
+        measureTool.updateMeasureToolPreview();
     }
 }

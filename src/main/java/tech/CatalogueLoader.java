@@ -109,7 +109,7 @@ public class CatalogueLoader {
         Catalogue defaultCatalogue = new Catalogue();
 
         Folder defaultFolder = new Folder();
-        defaultFolder.setName("Layout");
+        defaultFolder.setName("Layout tools");
 
         CatalogueItem defaultItem1 = new CatalogueItem();
         defaultItem1.setName("Floor-01");
@@ -121,9 +121,15 @@ public class CatalogueLoader {
         defaultItem2.setItemImage("Textures/Images/Icons/default_wall01.png");
         defaultItem2.setModelPath("Models/default_wall01.j3o");
 
+        CatalogueItem defaultItem4 = new CatalogueItem();
+        defaultItem4.setName("MeasureTool-01");
+        defaultItem4.setItemImage("Textures/Images/Icons/default_measureTool01.png");
+        defaultItem4.setModelPath("Models/default_measureTool01.j3o");
+
         List<CatalogueItem> items = new ArrayList<>();
         items.add(defaultItem1);
         items.add(defaultItem2);
+        items.add(defaultItem4);
         defaultFolder.setItems(items);
 
         List<Folder> folders = new ArrayList<>();
@@ -136,7 +142,8 @@ public class CatalogueLoader {
     public static List<String> getDefaultModelPaths() {
         return Arrays.asList(
                 "Models/default_floor01.j3o",
-                "Models/default_wall01.j3o"
+                "Models/default_wall01.j3o",
+                "Models/default_measureTool01.j3o"
         );
     }
 }

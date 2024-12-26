@@ -4,6 +4,8 @@ import UndoRedo.PropertyChangeAction;
 import UndoRedo.UndoManager;
 import com.jme3.asset.AssetManager;
 import com.jme3.bounding.BoundingBox;
+import com.jme3.collision.CollisionResult;
+import com.jme3.collision.CollisionResults;
 import com.jme3.input.InputManager;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
@@ -11,12 +13,14 @@ import com.jme3.input.controls.AnalogListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
+import com.jme3.math.Ray;
 import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.debug.WireBox;
 import com.jme3.scene.shape.Box;
 import ui.Grid;
 import ui.PropertiesPanel;
@@ -33,6 +37,7 @@ public class ObjectControls {
     private UndoManager undoManager;
     private PropertyChangeAction ongoingAction = null;
     private boolean snapToGrid = false;
+    private boolean stackingObjects = false;
     private boolean heightAdjustment = true;
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
@@ -45,6 +50,14 @@ public class ObjectControls {
 
     public boolean isSnapToGrid() {
         return snapToGrid;
+    }
+
+    public boolean isStackingObjects() {
+        return stackingObjects;
+    }
+
+    public void setStackingObjects(boolean stackingObjects) {
+        this.stackingObjects = stackingObjects;
     }
 
     public void setHeightAdjustment(boolean heightAdjustment) {
@@ -80,18 +93,26 @@ public class ObjectControls {
         if (object instanceof Geometry) {
             Geometry geom = (Geometry) object;
 
-            Box box = new Box(geom.getLocalScale().x * 1.05f, geom.getLocalScale().y * 1.05f, geom.getLocalScale().z * 1.05f);
-            outlineGeometry = new Geometry("Outline", box);
+            BoundingBox boundingBox = (BoundingBox) geom.getWorldBound();
+            if (boundingBox != null) {
+                Vector3f center = boundingBox.getCenter();
+                float xExtent = boundingBox.getXExtent() * 1.05f;
+                float yExtent = boundingBox.getYExtent() * 1.05f;
+                float zExtent = boundingBox.getZExtent() * 1.05f;
 
-            Material outlineMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-            outlineMaterial.setColor("Color", ColorRGBA.Yellow);
-            outlineMaterial.getAdditionalRenderState().setWireframe(true);
+                WireBox wireBox = new WireBox(xExtent, yExtent, zExtent);
+                outlineGeometry = new Geometry("Outline", wireBox);
 
-            outlineGeometry.setMaterial(outlineMaterial);
-            rootNode.attachChild(outlineGeometry);
-            outlineGeometry.setLocalTranslation(object.getLocalTranslation());
+                Material outlineMaterial = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+                outlineMaterial.setColor("Color", ColorRGBA.Yellow);
+                outlineMaterial.getAdditionalRenderState().setWireframe(true);
+                outlineGeometry.setMaterial(outlineMaterial);
+                rootNode.attachChild(outlineGeometry);
+                outlineGeometry.setLocalTranslation(center);
+            }
         }
     }
+
 
     private void removeHighlight() {
         if (outlineGeometry != null) {
@@ -114,6 +135,31 @@ public class ObjectControls {
                     newPosition.z = Math.round(newPosition.z / Grid.GRID_SPACING) * Grid.GRID_SPACING;
                 }
 
+                if (stackingObjects) {
+                    float topmostY = Grid.GRID_Y_LEVEL;
+
+                    BoundingBox detectionArea = new BoundingBox(newPosition, 10f, 1000f, 10f);
+                    CollisionResults results = new CollisionResults();
+                    rootNode.collideWith(detectionArea, results);
+
+                    if (results.size() > 0) {
+                        for (CollisionResult result : results) {
+                            Spatial collidedObject = result.getGeometry();
+                            if (collidedObject != selectedObject && !isExcluded(collidedObject)) {
+                                BoundingBox collidedBounds = (BoundingBox) collidedObject.getWorldBound();
+                                if (collidedBounds != null) {
+                                    float collidedHeight = collidedBounds.getYExtent() * 2;
+                                    float collidedY = collidedObject.getWorldTranslation().y;
+                                    float objectTopY = collidedY + collidedHeight;
+                                    topmostY = Math.max(topmostY, objectTopY);
+                                }
+                            }
+                        }
+
+                        newPosition.y = topmostY;
+                    }
+                }
+
                 if (heightAdjustment) {
                     float objectHeight = 0;
                     if (selectedObject instanceof Geometry) {
@@ -124,7 +170,7 @@ public class ObjectControls {
                         }
                     }
 
-                    newPosition.y = Grid.GRID_Y_LEVEL + objectHeight;
+                    newPosition.y = Math.max(newPosition.y, Grid.GRID_Y_LEVEL + objectHeight);
                 }
 
                 if (ongoingAction == null) {
@@ -140,7 +186,6 @@ public class ObjectControls {
                             initialName, initialPosition.clone(), initialRotation.clone(), initialScale.clone());
                 }
 
-
                 float[] currentAngles = selectedObject.getLocalRotation().toAngles(null);
                 Vector3f currentRotation = new Vector3f(currentAngles[0], currentAngles[1], currentAngles[2]);
 
@@ -149,7 +194,11 @@ public class ObjectControls {
                 selectedObject.setLocalTranslation(newPosition);
 
                 if (outlineGeometry != null) {
-                    outlineGeometry.setLocalTranslation(newPosition);
+                    BoundingBox boundingBox = (BoundingBox) selectedObject.getWorldBound();
+                    if (boundingBox != null) {
+                        Vector3f boundingBoxCenter = boundingBox.getCenter();
+                        outlineGeometry.setLocalTranslation(boundingBoxCenter);
+                    }
                 }
                 if (propertiesPanel != null) {
                     Vector3f rotation = new Vector3f(currentAngles[0], currentAngles[1], currentAngles[2]);
@@ -169,6 +218,15 @@ public class ObjectControls {
 
         inputManager.addListener(dragListener, "MouseDrag");
         inputManager.addListener(stopDragListener, "MouseRelease");
+    }
+
+    private boolean isExcluded(Spatial collidedObject) {
+        for (RayExcludedObjects excluded : RayExcludedObjects.values()) {
+            if (collidedObject.getName() != null && collidedObject.getName().equals(excluded.getObjectName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Vector3f getWorldPositionFromMouse(Vector2f mousePos) {
