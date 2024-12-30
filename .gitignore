@@ -1,3 +1,5 @@
 /target
 .idea
 recent_projects.json
+dependency-reduced-pom.xml
+.DS_Store

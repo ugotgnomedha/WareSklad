@@ -1,4 +1,4 @@
-package tech;
+package saverLoader;
 
 import UndoRedo.UndoManager;
 import com.google.gson.Gson;
@@ -8,6 +8,8 @@ import com.google.gson.JsonObject;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
+import tech.FloorPlacer;
+import tech.ModelLoader;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -79,8 +81,8 @@ public class ProjectSaver {
     }
 
     private void saveFloorSegmentData(Geometry segment, JsonObject objectJson) {
-        Integer floorId = floorPlacer.floorSegmentToFloorId.get(segment);
-        List<Vector3f> vertices = floorPlacer.floorSegmentVertices.get(segment);
+        Integer floorId = undoManager.getFloorSegmentToFloorId().get(segment);
+        List<Vector3f> vertices = undoManager.getFloorSegmentVertices().get(segment);
 
         if (floorId != null) {
             objectJson.addProperty("floorId", floorId);
@@ -98,14 +100,14 @@ public class ProjectSaver {
             objectJson.add("vertices", verticesArray);
         }
 
-        Float segmentLength = floorPlacer.floorSegmentDistances.get(segment);
+        Float segmentLength = undoManager.getFloorSegmentDistances().get(segment);
         if (segmentLength != null) {
             objectJson.addProperty("length", segmentLength);
         }
     }
 
     private void saveCompleteFloorData(Geometry floor, JsonObject objectJson) {
-        List<Vector3f> vertices = floorPlacer.completeFloorVertices.get(floor);
+        List<Vector3f> vertices = undoManager.getCompleteFloorVertices().get(floor);
 
         if (vertices != null) {
             JsonArray verticesArray = new JsonArray();
@@ -119,15 +121,15 @@ public class ProjectSaver {
             objectJson.add("vertices", verticesArray);
         }
 
-        Float area = floorPlacer.floorCompleteAreas.get(floor);
+        Float area = undoManager.getFloorCompleteAreas().get(floor);
         if (area != null) {
             objectJson.addProperty("area", area);
         }
 
-        int floorId = floorPlacer.floorSegmentToFloorId.get(floor);
+        int floorId = undoManager.getFloorSegmentToFloorId().get(floor);
         objectJson.addProperty("floorId", floorId);
 
-        Vector3f center = floorPlacer.completeFloorCenters.get(floorId);
+        Vector3f center = undoManager.getCompleteFloorCenters().get(floorId);
         if (center != null) {
             JsonObject centerJson = new JsonObject();
             centerJson.addProperty("x", center.x);

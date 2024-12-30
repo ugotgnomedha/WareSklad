@@ -10,11 +10,13 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
+import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
+import tech.layers.LayersManager;
 import ui.Grid;
 import ui.PropertiesPanel;
 import ui.UILinesDrawer;
@@ -22,6 +24,7 @@ import ui.UILinesDrawer;
 import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.concurrent.CountDownLatch;
 
 public class WareSkladInit extends SimpleApplication {
@@ -53,7 +56,7 @@ public class WareSkladInit extends SimpleApplication {
 
     private float mouseX, mouseY;
 
-    public void setPropertiesPanel(PropertiesPanel propertiesPanel, LayersManager layersManager) {
+    public void setPropertiesPanel(PropertiesPanel propertiesPanel, LayersManager layersManager, ResourceBundle bundle) {
         this.layersManager = layersManager;
         this.propertiesPanel = propertiesPanel;
         this.propertiesPanel.setLayersManager(layersManager);
@@ -95,7 +98,7 @@ public class WareSkladInit extends SimpleApplication {
 
         deleteObject = new DeleteObject(this, rootNode);
 
-        floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager);
+        floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager, this);
 
         measureTool = new MeasureTool(rootNode, assetManager, inputManager, cam);
 
@@ -253,18 +256,19 @@ public class WareSkladInit extends SimpleApplication {
         Vector3f scale = object.getLocalScale();
         String objectName = object.getName() != null ? object.getName() : "Unnamed Object";
 
-        propertiesPanel.updateProperties(objectName, position, rotation, scale);
+        propertiesPanel.updateProperties(objectName, position, rotation, scale, getColorFromObject(object));
 
         propertiesPanel.setOnNameChange(name -> {
             if (selectedObject != null) {
                 enqueue(() -> {
                     String previousName = selectedObject.getName();
+                    ColorRGBA previousColor = getColorFromObject(selectedObject);
                     selectedObject.setName(name);
 
                     undoManager.addAction(new PropertyChangeAction(
                             selectedObject,
-                            previousName, originalPosition, originalRotation, originalScale,
-                            name, originalPosition, originalRotation, originalScale
+                            previousName, originalPosition, originalRotation, originalScale, previousColor,
+                            name, originalPosition, originalRotation, originalScale, previousColor
                     ));
                 });
             }
@@ -274,12 +278,13 @@ public class WareSkladInit extends SimpleApplication {
             if (selectedObject != null) {
                 enqueue(() -> {
                     Vector3f prevPos = selectedObject.getLocalTranslation().clone();
+                    ColorRGBA prevColor = getColorFromObject(selectedObject);
                     selectedObject.setLocalTranslation(pos);
 
                     undoManager.addAction(new PropertyChangeAction(
                             selectedObject,
-                            originalName, prevPos, originalRotation, originalScale,
-                            originalName, pos, originalRotation, originalScale
+                            originalName, prevPos, originalRotation, originalScale, prevColor,
+                            originalName, pos, originalRotation, originalScale, prevColor
                     ));
                 });
             }
@@ -289,13 +294,14 @@ public class WareSkladInit extends SimpleApplication {
             if (selectedObject != null) {
                 enqueue(() -> {
                     Vector3f prevRot = new Vector3f(originalAngles[0], originalAngles[1], originalAngles[2]);
+                    ColorRGBA prevColor = getColorFromObject(selectedObject);
                     Quaternion newRotation = new Quaternion().fromAngles(rot.x, rot.y, rot.z);
                     selectedObject.setLocalRotation(newRotation);
 
                     undoManager.addAction(new PropertyChangeAction(
                             selectedObject,
-                            originalName, originalPosition, prevRot, originalScale,
-                            originalName, originalPosition, rot, originalScale
+                            originalName, originalPosition, prevRot, originalScale, prevColor,
+                            originalName, originalPosition, rot, originalScale, prevColor
                     ));
                 });
             }
@@ -305,17 +311,68 @@ public class WareSkladInit extends SimpleApplication {
             if (selectedObject != null) {
                 enqueue(() -> {
                     Vector3f prevScale = selectedObject.getLocalScale().clone();
+                    ColorRGBA prevColor = getColorFromObject(selectedObject);
                     selectedObject.setLocalScale(scl);
 
                     undoManager.addAction(new PropertyChangeAction(
                             selectedObject,
-                            originalName, originalPosition, originalRotation, prevScale,
-                            originalName, originalPosition, originalRotation, scl
+                            originalName, originalPosition, originalRotation, prevScale, prevColor,
+                            originalName, originalPosition, originalRotation, scl, prevColor
                     ));
-                    return null;
                 });
             }
         });
+
+        propertiesPanel.setOnColorChange(color -> {
+            if (selectedObject != null) {
+                enqueue(() -> {
+                    ColorRGBA previousColor = getColorFromObject(selectedObject);
+                    setObjectColor(selectedObject, color);
+
+                    undoManager.addAction(new PropertyChangeAction(
+                            selectedObject,
+                            originalName, originalPosition, originalRotation, originalScale,
+                            previousColor, originalName, originalPosition, originalRotation, originalScale,
+                            color
+                    ));
+                });
+            }
+        });
+    }
+
+    private ColorRGBA getColorFromObject(Spatial object) {
+        if (object instanceof Geometry) {
+            Geometry geometry = (Geometry) object;
+            Material material = geometry.getMaterial();
+            if (material != null) {
+                if (material.getParam("Diffuse") != null) {
+                    return (ColorRGBA) material.getParam("Diffuse").getValue();
+                } else if (material.getParam("Albedo") != null) {
+                    return (ColorRGBA) material.getParam("Albedo").getValue();
+                } else if (material.getParam("Color") != null) {
+                    return (ColorRGBA) material.getParam("Color").getValue();
+                }
+            }
+        }
+        return ColorRGBA.White;
+    }
+
+    private void setObjectColor(Spatial object, ColorRGBA color) {
+        if (object instanceof Geometry) {
+            Geometry geometry = (Geometry) object;
+            Material material = geometry.getMaterial();
+            if (material != null) {
+                if (material.getParam("Diffuse") != null) {
+                    material.setColor("Diffuse", color);
+                } else if (material.getParam("Albedo") != null) {
+                    material.setColor("Albedo", color);
+                } else if (material.getParam("Color") != null) {
+                    material.setColor("Color", color);
+                } else {
+                    material.setColor("Diffuse", color);
+                }
+            }
+        }
     }
 
     public void deselectObject() {
@@ -422,5 +479,13 @@ public class WareSkladInit extends SimpleApplication {
             this.getCanvas().setVisible(false);
             this.stop();
         }
+    }
+
+    public float getTotalFloorArea(){
+        return this.floorPlacer.calculateTotalFloorArea();
+    }
+
+    public float getModelUsedSpace(){
+        return this.modelLoader.calculateModelUsedSpace();
     }
 }

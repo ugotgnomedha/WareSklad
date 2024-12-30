@@ -11,6 +11,7 @@ import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ResourceBundle;
 
 public class ProjectsView {
 
@@ -18,11 +19,13 @@ public class ProjectsView {
     public static DefaultListModel<String> projectListModel;
     private JList<String> projectList;
     private static Gson gson;
+    private ResourceBundle bundle;
 
     public static String CURRENT_PROJECT_NAME;
     public static String CURRENT_PROJECT_PATH;
 
-    public ProjectsView() {
+    public ProjectsView(ResourceBundle bundle) {
+        this.bundle = bundle;
         gson = new Gson();
         projectListModel = new DefaultListModel<>();
         projectList = new JList<>(projectListModel);
@@ -32,7 +35,7 @@ public class ProjectsView {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
 
-        JLabel titleLabel = new JLabel("Recent Projects");
+        JLabel titleLabel = new JLabel(bundle.getString("recentProjects"));
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         panel.add(titleLabel, BorderLayout.NORTH);
 
@@ -42,7 +45,7 @@ public class ProjectsView {
         JPanel buttonsPanel = new JPanel();
         buttonsPanel.setLayout(new FlowLayout());
 
-        JButton createNewButton = new JButton("Create New Project");
+        JButton createNewButton = new JButton(bundle.getString("createNewProject"));
         createNewButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -50,7 +53,7 @@ public class ProjectsView {
             }
         });
 
-        JButton openSelectedButton = new JButton("Open Selected");
+        JButton openSelectedButton = new JButton(bundle.getString("openSelected"));
         openSelectedButton.setEnabled(false);
         openSelectedButton.addActionListener(new ActionListener() {
             @Override
@@ -59,7 +62,7 @@ public class ProjectsView {
             }
         });
 
-        JButton findProjectButton = new JButton("Find Project");
+        JButton findProjectButton = new JButton(bundle.getString("findProject"));
         findProjectButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -73,7 +76,7 @@ public class ProjectsView {
             }
         });
 
-        JButton deleteButton = new JButton("Delete Project");
+        JButton deleteButton = new JButton(bundle.getString("deleteProject"));
         deleteButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -127,20 +130,20 @@ public class ProjectsView {
 
                     openSavePlannerUI();
                 } else {
-                    JOptionPane.showMessageDialog(null, "The selected project file does not exist.");
+                    JOptionPane.showMessageDialog(null, bundle.getString("invalidProjectFile"));
                 }
             } else {
-                JOptionPane.showMessageDialog(null, "The selected project file must have a .json extension.");
+                JOptionPane.showMessageDialog(null, bundle.getString("invalidExtension"));
             }
         } else {
-            JOptionPane.showMessageDialog(null, "Please select a project to open.");
+            JOptionPane.showMessageDialog(null, bundle.getString("selectProject"));
         }
     }
 
     private void findProjectFile() {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Find Project File");
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("JSON Files", "json"));
+        fileChooser.setDialogTitle(bundle.getString("findProjectTitle"));
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(bundle.getString("jsonFiles"), "json"));
         int userChoice = fileChooser.showOpenDialog(null);
         if (userChoice == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
@@ -149,13 +152,13 @@ public class ProjectsView {
                 parentFrame.dispose();
 
                 CURRENT_PROJECT_PATH = selectedFile.getAbsolutePath();
-                PlannerUI plannerUI = new PlannerUI();
+                PlannerUI plannerUI = new PlannerUI(bundle);
                 JFrame frame = plannerUI.createMainFrame();
                 plannerUI.initializeUI(frame);
                 frame.setVisible(true);
                 plannerUI.loadProject(CURRENT_PROJECT_PATH);
             } else {
-                JOptionPane.showMessageDialog(null, "The selected file is not a valid project file.");
+                JOptionPane.showMessageDialog(null, bundle.getString("invalidFile"));
             }
         }
     }
@@ -166,7 +169,7 @@ public class ProjectsView {
             projectListModel.removeElement(selectedProject);
             saveRecentProjects();
         } else {
-            JOptionPane.showMessageDialog(null, "Please select a project to delete.");
+            JOptionPane.showMessageDialog(null, bundle.getString("selectDeleteProject"));
         }
     }
 
@@ -190,7 +193,7 @@ public class ProjectsView {
     }
 
     private void createNewProject() {
-        CURRENT_PROJECT_NAME = JOptionPane.showInputDialog(null, "Enter the name of the new project:");
+        CURRENT_PROJECT_NAME = JOptionPane.showInputDialog(null, bundle.getString("enterProjectName"));
 
         JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(projectList);
         parentFrame.dispose();
@@ -199,14 +202,14 @@ public class ProjectsView {
     }
 
     private void openPlannerUI() {
-        PlannerUI plannerUI = new PlannerUI();
+        PlannerUI plannerUI = new PlannerUI(bundle);
         JFrame frame = plannerUI.createMainFrame();
         plannerUI.initializeUI(frame);
         frame.setVisible(true);
     }
 
     private void openSavePlannerUI() {
-        PlannerUI plannerUI = new PlannerUI();
+        PlannerUI plannerUI = new PlannerUI(bundle);
         JFrame frame = plannerUI.createMainFrame();
         plannerUI.initializeUI(frame);
         frame.setVisible(true);

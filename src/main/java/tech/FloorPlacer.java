@@ -27,6 +27,7 @@ public class FloorPlacer {
     private final InputManager inputManager;
     private final Camera cam;
     private final UndoManager undoManager;
+    private WareSkladInit jmeScene;
 
     private Vector3f startPoint = null;
     private List<Vector3f> floorPoints = new ArrayList<>();
@@ -39,23 +40,15 @@ public class FloorPlacer {
 
     private Node measurementNode;
 
-    public Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
-    public Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
-    public Map<Integer, Vector3f> completeFloorCenters = new HashMap<>();
-
-    public Map<Geometry, Integer> floorSegmentToFloorId = new HashMap<>();
-    public Map<Integer, List<Geometry>> floorIdToSegments = new HashMap<>();
-    public Map<Geometry, List<Vector3f>> floorSegmentVertices = new HashMap<>();
-    public Map<Geometry, List<Vector3f>> completeFloorVertices = new HashMap<>();
-
     private Random random = new Random();
 
-    public FloorPlacer(Node rootNode, AssetManager assetManager, InputManager inputManager, Camera cam, UndoManager undoManager) {
+    public FloorPlacer(Node rootNode, AssetManager assetManager, InputManager inputManager, Camera cam, UndoManager undoManager, WareSkladInit jmeScene) {
         this.rootNode = rootNode;
         this.assetManager = assetManager;
         this.inputManager = inputManager;
         this.cam = cam;
         this.undoManager = undoManager;
+        this.jmeScene = jmeScene;
 
         this.measurementNode = new Node("MeasurementNode");
         this.rootNode.attachChild(this.measurementNode);
@@ -161,7 +154,7 @@ public class FloorPlacer {
         rootNode.attachChild(floorGeometry);
         floorSegmentGeometries.add(floorGeometry);
 
-        floorSegmentToFloorId.put(floorGeometry, -1);
+        undoManager.getFloorSegmentToFloorId().put(floorGeometry, -1);
 
         Vector3f[] segmentVertices = {
                 start,
@@ -169,74 +162,104 @@ public class FloorPlacer {
                 end,
                 new Vector3f(start.x, start.y, end.z)
         };
-        floorSegmentVertices.put(floorGeometry, Arrays.asList(segmentVertices));
+        undoManager.getFloorSegmentVertices().put(floorGeometry, Arrays.asList(segmentVertices));
 
         float segmentDistance = showMeasurements(false);
-        floorSegmentDistances.put(floorGeometry, segmentDistance);
+        undoManager.getFloorSegmentDistances().put(floorGeometry, segmentDistance);
     }
 
     public void createCompleteFloor() {
-        if (floorPoints.size() < 3) {
+        jmeScene.enqueue(() -> {
+            if (floorPoints.size() < 3) {
+                floorPoints.clear();
+                startPoint = null;
+                return;
+            }
+
+            Vector3f center = calculateCenter(floorPoints);
+
+            List<Vector3f> adjustedPoints = new ArrayList<>();
+            for (Vector3f point : floorPoints) {
+                adjustedPoints.add(point.subtract(center));
+            }
+
+            adjustedPoints.remove(adjustedPoints.size() - 1);
+
+            Vector3f[] vertices = adjustedPoints.toArray(new Vector3f[0]);
+            int[] indices = triangulate(vertices);
+
+            Mesh mesh = new Mesh();
+            mesh.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(vertices));
+            mesh.setBuffer(Type.Index, 3, BufferUtils.createIntBuffer(indices));
+            mesh.updateBound();
+
+            Geometry floorGeometry = new Geometry("CompleteFloor", mesh);
+            Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+            material.setColor("Color", ColorRGBA.Gray);
+            floorGeometry.setMaterial(material);
+
+            floorGeometry.setLocalTranslation(center.setY(Grid.GRID_Y_LEVEL));
+            rootNode.attachChild(floorGeometry);
+
+            undoManager.getCompleteFloorVertices().put(floorGeometry, Arrays.asList(vertices));
+
+            int floorId = random.nextInt(90000) + 10000;
+            undoManager.getFloorIdToSegments().put(floorId, new ArrayList<>());
+
+            undoManager.getFloorSegmentToFloorId().put(floorGeometry, floorId);
+            undoManager.getFloorIdToSegments().get(floorId).add(floorGeometry);
+
+            for (Geometry segment : floorSegmentGeometries) {
+                undoManager.getFloorSegmentToFloorId().put(segment, floorId);
+                undoManager.getFloorIdToSegments().get(floorId).add(segment);
+            }
+
+            undoManager.getCompleteFloorCenters().put(floorId, center);
+
+            Map<Geometry, Float> floorCompleteAreasCopy = new HashMap<>();
+            Map<Geometry, Float> floorSegmentDistancesCopy = new HashMap<>();
+            Map<Geometry, Integer> floorSegmentToFloorIdCopy = new HashMap<>();
+            Map<Integer, List<Geometry>> floorIdToSegmentsCopy = new HashMap<>();
+            Map<Geometry, List<Vector3f>> floorSegmentVerticesCopy = new HashMap<>();
+            Map<Geometry, List<Vector3f>> completeFloorVerticesCopy = new HashMap<>();
+
+            for (Geometry geometry : floorSegmentGeometries) {
+                floorSegmentDistancesCopy.put(geometry, undoManager.getFloorSegmentDistances().get(geometry));
+                floorSegmentToFloorIdCopy.put(geometry, undoManager.getFloorSegmentToFloorId().get(geometry));
+                floorSegmentVerticesCopy.put(geometry, undoManager.getFloorSegmentVertices().get(geometry));
+            }
+
+            floorCompleteAreasCopy.put(floorGeometry, showMeasurements(true));
+            completeFloorVerticesCopy.put(floorGeometry, Arrays.asList(vertices));
+            floorIdToSegmentsCopy.put(floorId, new ArrayList<>(undoManager.getFloorIdToSegments().get(floorId)));
+
+            List<Geometry> floorGeometriesCopy = new ArrayList<>(floorSegmentGeometries);
+            floorGeometriesCopy.add(floorGeometry);
+
+            undoManager.addAction(new FloorPlacementAction(
+                    floorGeometriesCopy,
+                    rootNode,
+                    floorCompleteAreasCopy,
+                    floorSegmentDistancesCopy,
+                    Map.of(floorId, center),
+                    floorSegmentToFloorIdCopy,
+                    floorIdToSegmentsCopy,
+                    floorSegmentVerticesCopy,
+                    completeFloorVerticesCopy
+            ));
+
+            float floorArea = showMeasurements(true);
+            undoManager.getFloorCompleteAreas().put(floorGeometry, floorArea);
+
+            floorSegmentGeometries.clear();
             floorPoints.clear();
             startPoint = null;
-            return;
-        }
 
-        Vector3f center = calculateCenter(floorPoints);
-
-        List<Vector3f> adjustedPoints = new ArrayList<>();
-        for (Vector3f point : floorPoints) {
-            adjustedPoints.add(point.subtract(center));
-        }
-
-        adjustedPoints.remove(adjustedPoints.size() - 1);
-
-        Vector3f[] vertices = adjustedPoints.toArray(new Vector3f[0]);
-        int[] indices = triangulate(vertices);
-
-        Mesh mesh = new Mesh();
-        mesh.setBuffer(Type.Position, 3, BufferUtils.createFloatBuffer(vertices));
-        mesh.setBuffer(Type.Index, 3, BufferUtils.createIntBuffer(indices));
-        mesh.updateBound();
-
-        Geometry floorGeometry = new Geometry("CompleteFloor", mesh);
-        Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
-        material.setColor("Color", ColorRGBA.Gray);
-        floorGeometry.setMaterial(material);
-
-        floorGeometry.setLocalTranslation(center.setY(Grid.GRID_Y_LEVEL));
-        rootNode.attachChild(floorGeometry);
-
-        completeFloorVertices.put(floorGeometry, Arrays.asList(vertices));
-
-        int floorId = random.nextInt(90000) + 10000;
-        floorIdToSegments.put(floorId, new ArrayList<>());
-
-        floorSegmentToFloorId.put(floorGeometry, floorId);
-        floorIdToSegments.get(floorId).add(floorGeometry);
-
-        for (Geometry segment : floorSegmentGeometries) {
-            floorSegmentToFloorId.put(segment, floorId);
-            floorIdToSegments.get(floorId).add(segment);
-        }
-
-        completeFloorCenters.put(floorId, center);
-
-        List<Geometry> floorGeometriesCopy = new ArrayList<>(floorSegmentGeometries);
-        floorGeometriesCopy.add(floorGeometry);
-        undoManager.addAction(new FloorPlacementAction(floorGeometriesCopy, rootNode));
-
-        float floorArea = showMeasurements(true);
-        floorCompleteAreas.put(floorGeometry, floorArea);
-
-        floorSegmentGeometries.clear();
-        floorPoints.clear();
-        startPoint = null;
-
-        if (previewFloorGeometry != null) {
-            rootNode.detachChild(previewFloorGeometry);
-            previewFloorGeometry = null;
-        }
+            if (previewFloorGeometry != null) {
+                rootNode.detachChild(previewFloorGeometry);
+                previewFloorGeometry = null;
+            }
+        });
     }
 
     public Vector3f calculateCenter(List<Vector3f> points) {
@@ -445,27 +468,39 @@ public class FloorPlacer {
         return Math.abs(area / 2.0f);
     }
 
-    private float calculateSegmentArea(Geometry floorGeometry) {
-        Vector3f scale = floorGeometry.getLocalScale();
-        float length = scale.x * 2;
-        float width = scale.z * 2;
-
-        return length * width;
+    public Map<Geometry, Float> getFloorCompleteAreas() {
+        return undoManager.getFloorCompleteAreas();
     }
 
     public Map<Geometry, Float> getFloorSegmentDistances() {
-        return floorSegmentDistances;
+        return undoManager.getFloorSegmentDistances();
     }
 
-    public Map<Geometry, Float> getFloorCompleteAreas() {
-        return floorCompleteAreas;
+    public Map<Integer, Vector3f> getCompleteFloorCenters() {
+        return undoManager.getCompleteFloorCenters();
     }
 
-    public void setFloorCompleteAreas(Map<Geometry, Float> floorCompleteAreas) {
-        this.floorCompleteAreas = floorCompleteAreas;
+    public Map<Geometry, Integer> getFloorSegmentToFloorId() {
+        return undoManager.getFloorSegmentToFloorId();
     }
 
-    public void setFloorSegmentDistances(Map<Geometry, Float> floorSegmentDistances) {
-        this.floorSegmentDistances = floorSegmentDistances;
+    public Map<Integer, List<Geometry>> getFloorIdToSegments() {
+        return undoManager.getFloorIdToSegments();
+    }
+
+    public Map<Geometry, List<Vector3f>> getFloorSegmentVertices() {
+        return undoManager.getFloorSegmentVertices();
+    }
+
+    public Map<Geometry, List<Vector3f>> getCompleteFloorVertices() {
+        return undoManager.getCompleteFloorVertices();
+    }
+
+    public float calculateTotalFloorArea() {
+        float totalArea = 0.0f;
+        for (Float area : undoManager.getFloorCompleteAreas().values()) {
+            totalArea += area;
+        }
+        return totalArea;
     }
 }

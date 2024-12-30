@@ -8,11 +8,15 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
+import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 import tech.*;
+import tech.layers.Layer;
+import tech.layers.LayersManager;
 
 public class PropertiesPanel extends JPanel {
 
@@ -27,6 +31,7 @@ public class PropertiesPanel extends JPanel {
     private Consumer<Vector3f> onPositionChange;
     private Consumer<Vector3f> onRotationChange;
     private Consumer<Vector3f> onScaleChange;
+    private Consumer<ColorRGBA> onColorChange;
 
     private boolean isTransformFolded = true;
     private ObjectControls objectControls;
@@ -38,6 +43,9 @@ public class PropertiesPanel extends JPanel {
     private LayersManager layersManager;
     private Spatial selectedObject;
     private JLabel currentLayerLabel;
+    private ColorRGBA selectedColor = new ColorRGBA(1, 1, 1, 1);
+    private JPanel colorPreview;
+    private ResourceBundle bundle;
 
     private JPanel dynamicSection;
 
@@ -69,45 +77,50 @@ public class PropertiesPanel extends JPanel {
         deleteButton.setEnabled(selectedObject != null);
     }
 
-    public PropertiesPanel() {
+    public PropertiesPanel(ResourceBundle bundle) {
+        this.bundle = bundle;
+
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         nameField = createCompactTextField(15);
         JPanel namePanel = new JPanel(new BorderLayout());
-        namePanel.add(new JLabel("Name:"), BorderLayout.WEST);
+        namePanel.add(new JLabel(bundle.getString("name_label")), BorderLayout.WEST);
         namePanel.add(nameField, BorderLayout.CENTER);
         namePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         namePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         add(namePanel);
 
-        JPanel transformPanel = createFoldablePanel("Transform", createTransformPanel());
+        JPanel transformPanel = createFoldablePanel(bundle.getString("transform_title"), createTransformPanel());
         add(transformPanel);
 
         dynamicSection = new JPanel();
         dynamicSection.setLayout(new BoxLayout(dynamicSection, BoxLayout.Y_AXIS));
         add(dynamicSection, BorderLayout.CENTER);
 
-        JPanel layersPanel = createFoldablePanel("Layers", createLayersPanel());
+        JPanel layersPanel = createFoldablePanel(bundle.getString("layers_title"), createLayersPanel());
         add(layersPanel);
 
-        JCheckBox snapToGridCheckbox = new JCheckBox("Snap to Grid");
+        JPanel colorSelectorPanel = createColorSelectorPanel();
+        add(colorSelectorPanel);
+
+        JCheckBox snapToGridCheckbox = new JCheckBox(bundle.getString("snap_to_grid"));
         add(snapToGridCheckbox);
         snapToGridCheckbox.addActionListener(e -> {
             measureTool.setSnapping(snapToGridCheckbox.isSelected());
             objectControls.setSnapToGrid(snapToGridCheckbox.isSelected());
         });
 
-        JCheckBox stackingCheckbox = new JCheckBox("Stacking");
+        JCheckBox stackingCheckbox = new JCheckBox(bundle.getString("stacking"));
         add(stackingCheckbox);
         stackingCheckbox.addActionListener(e -> objectControls.setStackingObjects(stackingCheckbox.isSelected()));
 
-        JCheckBox heightAdjustmentCheckbox = new JCheckBox("Height Adjustment");
+        JCheckBox heightAdjustmentCheckbox = new JCheckBox(bundle.getString("height_adjustment"));
         heightAdjustmentCheckbox.setSelected(true);
         add(heightAdjustmentCheckbox);
         heightAdjustmentCheckbox.addActionListener(e -> objectControls.setHeightAdjustment(heightAdjustmentCheckbox.isSelected()));
 
-        deleteButton = new JButton("Delete");
+        deleteButton = new JButton(bundle.getString("delete_button"));
         deleteButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         deleteButton.setEnabled(false);
         deleteButton.addActionListener(e -> {
@@ -127,6 +140,50 @@ public class PropertiesPanel extends JPanel {
         setupRealTimeListeners();
     }
 
+    private JPanel createColorSelectorPanel() {
+        JPanel colorPanel = new JPanel();
+        colorPanel.setLayout(new BoxLayout(colorPanel, BoxLayout.X_AXIS));
+        colorPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        colorPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+        JButton colorButton = new JButton(bundle.getString("color_button"));
+        colorPreview = new JPanel();
+
+        Color previewColor = new Color(
+                selectedColor.getRed(),
+                selectedColor.getGreen(),
+                selectedColor.getBlue(),
+                selectedColor.getAlpha());
+
+        colorPreview.setBackground(previewColor);
+        colorPreview.setPreferredSize(new Dimension(30, 20));
+        colorPreview.setBorder(BorderFactory.createLineBorder(Color.BLACK));
+
+        colorButton.addActionListener(e -> {
+            Color newColor = JColorChooser.showDialog(this, bundle.getString("color_chooser"), previewColor);
+            if (newColor != null) {
+                selectedColor = new ColorRGBA(
+                        newColor.getRed() / 255f,
+                        newColor.getGreen() / 255f,
+                        newColor.getBlue() / 255f,
+                        newColor.getAlpha() / 255f
+                );
+
+                colorPreview.setBackground(newColor);
+                if (onColorChange != null) {
+                    onColorChange.accept(selectedColor);
+                }
+            }
+        });
+
+        colorPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+        colorPanel.add(colorButton);
+        colorPanel.add(Box.createRigidArea(new Dimension(10, 0)));
+        colorPanel.add(colorPreview);
+
+        return colorPanel;
+    }
+
     private JPanel createTransformPanel() {
         JPanel transformContent = new JPanel();
         transformContent.setLayout(new GridBagLayout());
@@ -135,7 +192,7 @@ public class PropertiesPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 0;
-        transformContent.add(new JLabel("Position:"), gbc);
+        transformContent.add(new JLabel(bundle.getString("position")), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 0;
@@ -151,7 +208,7 @@ public class PropertiesPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 1;
-        transformContent.add(new JLabel("Rotation:"), gbc);
+        transformContent.add(new JLabel(bundle.getString("rotation_label")), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
@@ -167,7 +224,7 @@ public class PropertiesPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 2;
-        transformContent.add(new JLabel("Scale:"), gbc);
+        transformContent.add(new JLabel(bundle.getString("scale_label")), gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 2;
@@ -196,7 +253,7 @@ public class PropertiesPanel extends JPanel {
         JPanel layersContent = new JPanel();
         layersContent.setLayout(new BoxLayout(layersContent, BoxLayout.Y_AXIS));
 
-        currentLayerLabel = new JLabel("Current Layer: None");
+        currentLayerLabel = new JLabel(bundle.getString("current_layer_label"));
         layersContent.add(currentLayerLabel);
 
         layerDropdown = new JComboBox<>();
@@ -225,8 +282,8 @@ public class PropertiesPanel extends JPanel {
         layersContent.add(layerDropdown);
 
         JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        addToLayerButton = new JButton("Add Object to Layer");
-        removeFromLayerButton = new JButton("Remove Object from Layer");
+        addToLayerButton = new JButton(bundle.getString("add_to_layer"));
+        removeFromLayerButton = new JButton(bundle.getString("remove_from_layer"));
 
         buttonsPanel.add(addToLayerButton);
         buttonsPanel.add(removeFromLayerButton);
@@ -307,9 +364,9 @@ public class PropertiesPanel extends JPanel {
 
     private void updateCurrentLayerLabel(JLabel label, String layerName) {
         if (layerName == null) {
-            label.setText("Current Layer: None");
+            label.setText(bundle.getString("current_layer_label"));
         } else {
-            label.setText("Current Layer: " + layerName);
+            label.setText(bundle.getString("current_layer_label") + layerName);
         }
     }
 
@@ -403,14 +460,14 @@ public class PropertiesPanel extends JPanel {
 
     public void updateDynamicSectionToFloorSegmentProperties(float distance) {
         dynamicSection.removeAll();
-        dynamicSection.add(new JLabel("Segment Distance (m): " + String.format("%.2f", distance)));
+        dynamicSection.add(new JLabel(bundle.getString("floor_segment_distance") + String.format("%.2f", distance)));
         dynamicSection.revalidate();
         dynamicSection.repaint();
     }
 
     public void updateDynamicSectionToCompleteFloorProperties(float area) {
         dynamicSection.removeAll();
-        dynamicSection.add(new JLabel("Complete Area (m²): " + String.format("%.2f", area)));
+        dynamicSection.add(new JLabel(bundle.getString("floor_area") + String.format("%.2f", area)));
         dynamicSection.revalidate();
         dynamicSection.repaint();
     }
@@ -426,7 +483,7 @@ public class PropertiesPanel extends JPanel {
         dynamicSection.repaint();
     }
 
-    public void updateProperties(String name, Vector3f position, Vector3f rotation, Vector3f scale) {
+    public void updateProperties(String name, Vector3f position, Vector3f rotation, Vector3f scale, ColorRGBA color) {
         nameField.setText(name);
         positionXField.setText(String.format(Locale.US, "%.2f", position.x));
         positionYField.setText(String.format(Locale.US, "%.2f", position.y));
@@ -439,6 +496,8 @@ public class PropertiesPanel extends JPanel {
         scaleXField.setText(String.format(Locale.US, "%.2f", scale.x));
         scaleYField.setText(String.format(Locale.US, "%.2f", scale.y));
         scaleZField.setText(String.format(Locale.US, "%.2f", scale.z));
+
+        colorPreview.setBackground(new java.awt.Color(color.getRed(), color.getGreen(), color.getBlue()));
     }
 
     public void clearPropertiesPanel() {
@@ -468,5 +527,9 @@ public class PropertiesPanel extends JPanel {
 
     public void setOnScaleChange(Consumer<Vector3f> callback) {
         this.onScaleChange = callback;
+    }
+
+    public void setOnColorChange(Consumer<ColorRGBA> callback) {
+        this.onColorChange = callback;
     }
 }

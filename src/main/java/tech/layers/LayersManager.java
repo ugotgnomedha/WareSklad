@@ -1,6 +1,5 @@
-package tech;
+package tech.layers;
 
-import com.jme3.asset.AssetManager;
 import com.jme3.scene.Spatial;
 import java.util.HashMap;
 import java.util.Map;

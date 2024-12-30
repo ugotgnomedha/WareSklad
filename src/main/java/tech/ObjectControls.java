@@ -179,17 +179,19 @@ public class ObjectControls {
                     float[] initialAngles = selectedObject.getLocalRotation().toAngles(null);
                     Vector3f initialRotation = new Vector3f(initialAngles[0], initialAngles[1], initialAngles[2]);
                     Vector3f initialScale = selectedObject.getLocalScale().clone();
+                    ColorRGBA initialColor = getColorFromObject(selectedObject);
 
                     ongoingAction = new PropertyChangeAction(
                             selectedObject,
-                            initialName, initialPosition, initialRotation, initialScale,
-                            initialName, initialPosition.clone(), initialRotation.clone(), initialScale.clone());
+                            initialName, initialPosition, initialRotation, initialScale, initialColor,
+                            initialName, initialPosition.clone(), initialRotation.clone(), initialScale.clone(), initialColor);
                 }
 
                 float[] currentAngles = selectedObject.getLocalRotation().toAngles(null);
                 Vector3f currentRotation = new Vector3f(currentAngles[0], currentAngles[1], currentAngles[2]);
+                ColorRGBA currentColor = getColorFromObject(selectedObject);
 
-                ongoingAction.setFinalProperties(newPosition, currentRotation, selectedObject.getLocalScale());
+                ongoingAction.setFinalProperties(newPosition, currentRotation, selectedObject.getLocalScale(), currentColor);
 
                 selectedObject.setLocalTranslation(newPosition);
 
@@ -202,7 +204,7 @@ public class ObjectControls {
                 }
                 if (propertiesPanel != null) {
                     Vector3f rotation = new Vector3f(currentAngles[0], currentAngles[1], currentAngles[2]);
-                    propertiesPanel.updateProperties(selectedObject.getName(), newPosition, rotation, selectedObject.getLocalScale());
+                    propertiesPanel.updateProperties(selectedObject.getName(), newPosition, rotation, selectedObject.getLocalScale(), getColorFromObject(selectedObject));
                 }
             }
         };
@@ -218,6 +220,23 @@ public class ObjectControls {
 
         inputManager.addListener(dragListener, "MouseDrag");
         inputManager.addListener(stopDragListener, "MouseRelease");
+    }
+
+    private ColorRGBA getColorFromObject(Spatial object) {
+        if (object instanceof Geometry) {
+            Geometry geometry = (Geometry) object;
+            Material material = geometry.getMaterial();
+            if (material != null) {
+                if (material.getParam("Diffuse") != null) {
+                    return (ColorRGBA) material.getParam("Diffuse").getValue();
+                } else if (material.getParam("Albedo") != null) {
+                    return (ColorRGBA) material.getParam("Albedo").getValue();
+                } else if (material.getParam("Color") != null) {
+                    return (ColorRGBA) material.getParam("Color").getValue();
+                }
+            }
+        }
+        return ColorRGBA.White;
     }
 
     private boolean isExcluded(Spatial collidedObject) {

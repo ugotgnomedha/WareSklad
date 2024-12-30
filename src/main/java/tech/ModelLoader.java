@@ -4,9 +4,11 @@ import UndoRedo.ModelLoadAction;
 import UndoRedo.UndoManager;
 import com.jme3.asset.AssetManager;
 import com.jme3.bounding.BoundingBox;
+import com.jme3.bounding.BoundingSphere;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.Node;
+import ui.Grid;
 
 import java.util.HashMap;
 import java.util.List;
@@ -87,5 +89,44 @@ public class ModelLoader {
 
     public String getModelPath(Spatial model) {
         return modelPathsMap.get(model);
+    }
+
+    public float calculateModelUsedSpace() {
+        float totalArea = 0.0f;
+
+        float gridCellSize = Grid.GRID_SPACING;
+
+        for (Spatial model : undoManager.getCurrentSceneObjects()) {
+            if (undoManager.isFloorRelated(model)) {
+                continue;
+            }
+            if (model.getWorldBound() != null) {
+                if (model.getWorldBound() instanceof BoundingBox) {
+                    BoundingBox box = (BoundingBox) model.getWorldBound();
+                    Vector3f extent = box.getExtent(null);
+
+                    float width = extent.x * 2;
+                    float depth = extent.z * 2;
+
+                    float widthInGridCells = width / gridCellSize;
+                    float depthInGridCells = depth / gridCellSize;
+
+                    float areaInGridCells = widthInGridCells * depthInGridCells;
+                    totalArea += areaInGridCells;
+                } else if (model.getWorldBound() instanceof BoundingSphere) {
+                    BoundingSphere sphere = (BoundingSphere) model.getWorldBound();
+                    float radius = sphere.getRadius();
+
+                    float diameter = radius * 2;
+
+                    float diameterInGridCells = diameter / gridCellSize;
+
+                    float areaInGridCells = diameterInGridCells * diameterInGridCells * (float)Math.PI;
+                    totalArea += areaInGridCells;
+                }
+            }
+        }
+
+        return totalArea;
     }
 }

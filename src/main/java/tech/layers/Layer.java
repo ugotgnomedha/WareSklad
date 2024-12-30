@@ -1,4 +1,4 @@
-package tech;
+package tech.layers;
 
 import com.jme3.scene.Spatial;
 import java.util.HashSet;

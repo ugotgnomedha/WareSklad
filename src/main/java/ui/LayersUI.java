@@ -1,8 +1,8 @@
 package ui;
 
 import com.jme3.scene.Spatial;
-import tech.Layer;
-import tech.LayersManager;
+import tech.layers.Layer;
+import tech.layers.LayersManager;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -10,24 +10,34 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
+import javax.swing.tree.*;
+import javax.swing.event.*;
+import javax.swing.filechooser.*;
+
 public class LayersUI extends JPanel {
 
     private final LayersManager layersManager;
     private JButton removeObjectButton;
+    private ResourceBundle bundle;
 
     public LayersUI(LayersManager layersManager) {
         this.layersManager = layersManager;
+        this.bundle = ResourceBundle.getBundle("MessagesBundle", Locale.getDefault());
         this.setLayout(new BorderLayout());
     }
 
     public JMenu createLayersMenu(JFrame frame) {
-        JMenu layersMenu = new JMenu("Layers");
+        JMenu layersMenu = new JMenu(bundle.getString("layersMenu"));
 
-        JMenuItem addLayerItem = new JMenuItem("Add Layer");
+        JMenuItem addLayerItem = new JMenuItem(bundle.getString("addLayer"));
         addLayerItem.addActionListener(e -> showAddLayerDialog(frame));
         layersMenu.add(addLayerItem);
 
-        JMenuItem editLayerItem = new JMenuItem("Edit Layer");
+        JMenuItem editLayerItem = new JMenuItem(bundle.getString("editLayer"));
         editLayerItem.addActionListener(e -> showEditLayerDialog(frame));
         layersMenu.add(editLayerItem);
 
@@ -39,16 +49,16 @@ public class LayersUI extends JPanel {
         int dialogWidth = screenSize.width / 3;
         int dialogHeight = screenSize.height / 2;
 
-        JDialog addLayerDialog = new JDialog(parentFrame, "Add Layer", true);
+        JDialog addLayerDialog = new JDialog(parentFrame, bundle.getString("addLayer"), true);
         addLayerDialog.setSize(dialogWidth, dialogHeight);
         addLayerDialog.setLayout(new GridLayout(4, 2));
 
-        JLabel nameLabel = new JLabel("Layer Name:");
+        JLabel nameLabel = new JLabel(bundle.getString("layerName"));
         JTextField nameField = new JTextField();
         addLayerDialog.add(nameLabel);
         addLayerDialog.add(nameField);
 
-        JLabel opacityLabel = new JLabel("Opacity:");
+        JLabel opacityLabel = new JLabel(bundle.getString("opacity"));
         JSlider opacitySlider = new JSlider(0, 100, 50);
         opacitySlider.setMajorTickSpacing(10);
         opacitySlider.setMinorTickSpacing(1);
@@ -57,29 +67,28 @@ public class LayersUI extends JPanel {
         addLayerDialog.add(opacityLabel);
         addLayerDialog.add(opacitySlider);
 
-        JLabel lockLabel = new JLabel("Lock Edit:");
+        JLabel lockLabel = new JLabel(bundle.getString("lockEdit"));
         JCheckBox lockCheckBox = new JCheckBox();
         addLayerDialog.add(lockLabel);
         addLayerDialog.add(lockCheckBox);
 
-        JButton okButton = new JButton("OK");
+        JButton okButton = new JButton(bundle.getString("ok"));
         okButton.addActionListener(e -> {
             String layerName = nameField.getText();
             float opacity = opacitySlider.getValue();
             boolean lockEdit = lockCheckBox.isSelected();
 
             layersManager.addLayer(layerName, opacity, lockEdit);
-            System.out.println("Layer added: " + layerName);
+            System.out.println(bundle.getString("layerAdded") + ": " + layerName);
             addLayerDialog.dispose();
         });
         addLayerDialog.add(okButton);
 
-        JButton cancelButton = new JButton("Cancel");
+        JButton cancelButton = new JButton(bundle.getString("cancel"));
         cancelButton.addActionListener(e -> addLayerDialog.dispose());
         addLayerDialog.add(cancelButton);
 
         addLayerDialog.setLocationRelativeTo(parentFrame);
-
         addLayerDialog.setVisible(true);
     }
 
@@ -88,7 +97,7 @@ public class LayersUI extends JPanel {
         int dialogWidth = screenSize.width / 3;
         int dialogHeight = screenSize.height / 2;
 
-        JDialog editLayerDialog = new JDialog(parentFrame, "Edit Layer", true);
+        JDialog editLayerDialog = new JDialog(parentFrame, bundle.getString("editLayer"), true);
         editLayerDialog.setSize(dialogWidth, dialogHeight);
         editLayerDialog.setLayout(new BorderLayout());
 
@@ -97,24 +106,24 @@ public class LayersUI extends JPanel {
 
         String[] layerNames = layersManager.getAllLayers().keySet().toArray(new String[0]);
         String[] allLayerNames = new String[layerNames.length + 1];
-        allLayerNames[0] = "-Select an existing layer-";
+        allLayerNames[0] = bundle.getString("selectExistingLayer");
         System.arraycopy(layerNames, 0, allLayerNames, 1, layerNames.length);
 
         JComboBox<String> layerComboBox = new JComboBox<>(allLayerNames);
         layerComboBox.addActionListener(e -> showLayerEditingFields(editLayerDialog, (String) layerComboBox.getSelectedItem()));
 
-        layerSelectionPanel.add(new JLabel("Select Layer:"));
+        layerSelectionPanel.add(new JLabel(bundle.getString("selectLayer")));
         layerSelectionPanel.add(layerComboBox);
 
         JPanel editingPanel = new JPanel();
         editingPanel.setLayout(new GridLayout(4, 2));
 
-        JLabel nameLabel = new JLabel("Layer Name:");
+        JLabel nameLabel = new JLabel(bundle.getString("layerName"));
         JTextField nameField = new JTextField();
         editingPanel.add(nameLabel);
         editingPanel.add(nameField);
 
-        JLabel opacityLabel = new JLabel("Opacity:");
+        JLabel opacityLabel = new JLabel(bundle.getString("opacity"));
         JSlider opacitySlider = new JSlider(0, 100, 50);
         opacitySlider.setMajorTickSpacing(10);
         opacitySlider.setMinorTickSpacing(1);
@@ -123,12 +132,12 @@ public class LayersUI extends JPanel {
         editingPanel.add(opacityLabel);
         editingPanel.add(opacitySlider);
 
-        JLabel lockLabel = new JLabel("Lock Edit:");
+        JLabel lockLabel = new JLabel(bundle.getString("lockEdit"));
         JCheckBox lockCheckBox = new JCheckBox();
         editingPanel.add(lockLabel);
         editingPanel.add(lockCheckBox);
 
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("Objects");
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode(bundle.getString("objects"));
         JTree objectTree = new JTree(rootNode);
         JScrollPane objectScrollPane = new JScrollPane(objectTree);
         objectScrollPane.setPreferredSize(new Dimension(dialogWidth / 3, dialogHeight / 2));
@@ -151,7 +160,7 @@ public class LayersUI extends JPanel {
         });
 
         JPanel buttonsPanel = new JPanel();
-        removeObjectButton = new JButton("Remove Object from Layer");
+        removeObjectButton = new JButton(bundle.getString("removeObjectFromLayer"));
         removeObjectButton.setEnabled(false);
         removeObjectButton.addActionListener(e -> {
             String selectedLayerName = (String) layerComboBox.getSelectedItem();
@@ -171,11 +180,11 @@ public class LayersUI extends JPanel {
         editLayerDialog.add(objectScrollPane, BorderLayout.EAST);
         editLayerDialog.add(buttonsPanel, BorderLayout.SOUTH);
 
-        JButton okButton = new JButton("OK");
+        JButton okButton = new JButton(bundle.getString("ok"));
         okButton.addActionListener(e -> {
             String selectedLayerName = (String) layerComboBox.getSelectedItem();
             if ("-Select an existing layer-".equals(selectedLayerName)) {
-                JOptionPane.showMessageDialog(editLayerDialog, "Please select a valid layer.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(editLayerDialog, bundle.getString("selectValidLayer"), bundle.getString("error"), JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
@@ -186,34 +195,34 @@ public class LayersUI extends JPanel {
                 boolean lockEdit = lockCheckBox.isSelected();
 
                 layersManager.editLayer(selectedLayerName, newLayerName, opacity, lockEdit);
-                System.out.println("Layer updated: " + newLayerName);
+                System.out.println(bundle.getString("layerUpdated") + ": " + newLayerName);
                 editLayerDialog.dispose();
             }
         });
         buttonsPanel.add(okButton);
 
-        JButton deleteButton = new JButton("Delete");
+        JButton deleteButton = new JButton(bundle.getString("delete"));
         deleteButton.addActionListener(e -> {
             String selectedLayerName = (String) layerComboBox.getSelectedItem();
             if ("-Select an existing layer-".equals(selectedLayerName)) {
-                JOptionPane.showMessageDialog(editLayerDialog, "Please select a valid layer.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(editLayerDialog, bundle.getString("selectValidLayer"), bundle.getString("error"), JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             int confirmation = JOptionPane.showConfirmDialog(editLayerDialog,
-                    "Are you sure you want to delete the layer \"" + selectedLayerName + "\"?",
-                    "Confirm Delete",
+                    String.format(bundle.getString("confirmDelete"), selectedLayerName),
+                    bundle.getString("error"),
                     JOptionPane.YES_NO_OPTION);
 
             if (confirmation == JOptionPane.YES_OPTION) {
                 layersManager.removeLayer(selectedLayerName);
-                System.out.println("Layer deleted: " + selectedLayerName);
+                System.out.println(bundle.getString("layerDeleted") + ": " + selectedLayerName);
                 editLayerDialog.dispose();
             }
         });
         buttonsPanel.add(deleteButton);
 
-        JButton cancelButton = new JButton("Cancel");
+        JButton cancelButton = new JButton(bundle.getString("cancel"));
         cancelButton.addActionListener(e -> editLayerDialog.dispose());
         buttonsPanel.add(cancelButton);
 
@@ -245,7 +254,8 @@ public class LayersUI extends JPanel {
 
         if (layer != null) {
             nameField.setText(layer.getName());
-            opacitySlider.setValue((int) layer.getOpacity());
+            int originalOpacity = (int) (layer.getOpacity() * 100);
+            opacitySlider.setValue(originalOpacity);
             lockCheckBox.setSelected(layer.isLockEdit());
             updateObjectTree((JTree) ((JScrollPane) editLayerDialog.getContentPane().getComponent(2)).getViewport().getView(), selectedLayer);
         }

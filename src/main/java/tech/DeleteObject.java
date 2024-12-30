@@ -1,9 +1,13 @@
 package tech;
 
+import UndoRedo.FloorDeleteAction;
 import UndoRedo.DeleteAction;
 import UndoRedo.UndoManager;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.Node;
+
+import java.util.List;
 
 public class DeleteObject {
 
@@ -20,7 +24,21 @@ public class DeleteObject {
     public void delete(Spatial object) {
         if (object != null) {
             jmeScene.enqueue(() -> {
-                undoManager.addAction(new DeleteAction(object, rootNode));
+                if (undoManager.isFloorRelated(object)) {
+                    undoManager.addAction(new FloorDeleteAction(
+                            List.of((Geometry) object),
+                            rootNode,
+                            undoManager.getFloorCompleteAreas(),
+                            undoManager.getFloorSegmentDistances(),
+                            undoManager.getCompleteFloorCenters(),
+                            undoManager.getFloorSegmentToFloorId(),
+                            undoManager.getFloorIdToSegments(),
+                            undoManager.getFloorSegmentVertices(),
+                            undoManager.getCompleteFloorVertices()
+                    ));
+                } else {
+                    undoManager.addAction(new DeleteAction(object, rootNode));
+                }
                 object.removeFromParent();
             });
         } else {

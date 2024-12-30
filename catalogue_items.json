@@ -1,24 +1,31 @@
 {
   "folders": [
     {
-      "name": "Folder 1",
+      "name": "Test Items",
       "items": [
-        { "name": "Cube", "itemImage": "Textures/Images/Items/cube01.png", "modelPath": "Models/TestModels/cube01.j3o" },
-        { "name": "Sphere", "itemImage": "Textures/Images/Items/sphere01.png", "modelPath": "Models/TestModels/sphere01.j3o" }
+        { "name": "Cube", "itemImage": "Textures/Images/Items/TestItems/cube01.png", "modelPath": "Models/TestItems/cube01.j3o" },
+        { "name": "Torus", "itemImage": "Textures/Images/Items/TestItems/torus01.png", "modelPath": "Models/TestItems/torus01.j3o" }
       ]
     },
     {
       "name": "Racking Systems",
       "items": [
-        { "name": "Rack01", "itemImage": "Textures/Images/Items/rack01.png", "modelPath": "Models/RacksShelves/rack01.j3o" },
-        { "name": "Rack02", "itemImage": "Textures/Images/Items/rack02.png", "modelPath": "Models/RacksShelves/rack02.j3o" },
-        { "name": "Stackable Rack01", "itemImage": "Textures/Images/Items/rack_stackable01.png", "modelPath": "Models/RacksShelves/rack_stackable01.j3o" }
+        { "name": "Rack01", "itemImage": "Textures/Images/Items/RackingSystems/rack01.png", "modelPath": "Models/RackingSystems/rack01.j3o" },
+        { "name": "Rack02", "itemImage": "Textures/Images/Items/RackingSystems/rack02.png", "modelPath": "Models/RackingSystems/rack02.j3o" },
+        { "name": "Rack03", "itemImage": "Textures/Images/Items/RackingSystems/rack03.png", "modelPath": "Models/RackingSystems/rack_stackable01.j3o" }
       ]
     },
     {
-      "name": "Folder 3",
+      "name": "Pallets",
       "items": [
-        { "name": "Torus", "itemImage": "Textures/Images/Items/torus01.png", "modelPath": "Models/TestModels/torus01.j3o" }
+        { "name": "Pallet01", "itemImage": "Textures/Images/Items/Pallets/pallet01.png", "modelPath": "Models/Pallets/pallet01.j3o" }
+      ]
+    },
+    {
+      "name": "Misc",
+      "items": [
+        { "name": "Lamp01", "itemImage": "Textures/Images/Items/Misc/lamp01.png", "modelPath": "Models/Misc/lamp01.j3o" },
+        { "name": "Gas Canister01", "itemImage": "Textures/Images/Items/Misc/gas_can01.png", "modelPath": "Models/Misc/gas_can01.j3o" }
       ]
     }
   ]

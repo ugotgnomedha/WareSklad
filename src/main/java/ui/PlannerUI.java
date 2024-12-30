@@ -1,23 +1,35 @@
 package ui;
 
 import com.jme3.system.JmeCanvasContext;
+import saverLoader.ProjectLoader;
+import saverLoader.ProjectSaver;
 import tech.*;
+import tech.KPIs.KPIViewer;
+import tech.layers.LayersManager;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.ResourceBundle;
 
 public class PlannerUI {
 
     private WareSkladInit jmeScene;
-    private PropertiesPanel propertiesPanel = new PropertiesPanel();
+    private PropertiesPanel propertiesPanel;
     private LayersManager layersManager = new LayersManager();
     private GridSettingUI gridSettingUI = new GridSettingUI();
     private ProjectSaver projectSaver;
     private ProjectLoader projectLoader;
+    private KPIViewer kpiViewer;
+    private ResourceBundle bundle;
+
+    public PlannerUI(ResourceBundle bundle){
+        this.bundle = bundle;
+        propertiesPanel = new PropertiesPanel(bundle);
+    }
 
     public JFrame createMainFrame() {
-        JFrame frame = new JFrame("Planner Application");
+        JFrame frame = new JFrame(bundle.getString("plannerTitle"));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setResizable(true);
@@ -48,23 +60,13 @@ public class PlannerUI {
     private JMenuBar createMenuBar(JFrame frame) {
         JMenuBar menuBar = new JMenuBar();
 
-        JMenu projectMenu = new JMenu("Project");
-//        JMenuItem openItem = new JMenuItem("Open");
-//        openItem.addActionListener(e -> {
-//            JFileChooser fileChooser = new JFileChooser();
-//            fileChooser.setDialogTitle("Open Project File");
-//            int userChoice = fileChooser.showOpenDialog(frame);
-//            if (userChoice == JFileChooser.APPROVE_OPTION) {
-//                File selectedFile = fileChooser.getSelectedFile();
-//                projectLoader.loadProject(selectedFile.getAbsolutePath());
-//            }
-//        });
+        JMenu projectMenu = new JMenu(bundle.getString("project"));
 
-        JMenuItem saveItem = new JMenuItem("Save");
+        JMenuItem saveItem = new JMenuItem(bundle.getString("save"));
         saveItem.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Save Project File");
-            fileChooser.setApproveButtonText("Save");
+            fileChooser.setDialogTitle(bundle.getString("saveProject"));
+            fileChooser.setApproveButtonText(bundle.getString("save"));
             fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 
             String fileName = "";
@@ -95,29 +97,27 @@ public class PlannerUI {
                 ProjectsView.saveRecentProjects();
             }
         });
-        JMenuItem closeItem = new JMenuItem("Close");
+        JMenuItem closeItem = new JMenuItem(bundle.getString("close"));
         closeItem.addActionListener(e -> {
             shutdownJme();
             frame.dispose();
             SwingUtilities.invokeLater(() -> {
-                ProjectsView projectsView = new ProjectsView();
-                JFrame projectsFrame = new JFrame("Projects View");
+                ProjectsView projectsView = new ProjectsView(bundle);
+                JFrame projectsFrame = new JFrame(bundle.getString("projects"));
                 projectsFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 projectsFrame.setSize(600, 400);
                 projectsFrame.add(projectsView.createProjectsPanel());
                 projectsFrame.setVisible(true);
             });
         });
-
-//        projectMenu.add(openItem);
         projectMenu.add(saveItem);
         projectMenu.add(closeItem);
 
-        JMenu editMenu = new JMenu("Edit");
-        JMenuItem undoAction = new JMenuItem("Undo");
+        JMenu editMenu = new JMenu(bundle.getString("edit"));
+        JMenuItem undoAction = new JMenuItem(bundle.getString("undo"));
         undoAction.addActionListener(e -> jmeScene.undoManager.undo());
         editMenu.add(undoAction);
-        JMenuItem redoAction = new JMenuItem("Redo");
+        JMenuItem redoAction = new JMenuItem(bundle.getString("redo"));
         redoAction.addActionListener(e -> jmeScene.undoManager.redo());
         editMenu.add(redoAction);
 
@@ -125,22 +125,33 @@ public class PlannerUI {
         JMenu layersMenu = layersUI.createLayersMenu(frame);
         editMenu.add(layersMenu);
 
-        JMenu viewMenu = new JMenu("View");
-        JMenuItem twoDimSetting = new JMenuItem("Enter 2D View");
+        JMenu viewMenu = new JMenu(bundle.getString("view"));
+        JMenuItem twoDimSetting = new JMenuItem(bundle.getString("enter2DView"));
         twoDimSetting.addActionListener(e -> {
             jmeScene.setTwoDView();
-            System.out.println("Entered 2D View");
         });
         viewMenu.add(twoDimSetting);
-        JMenuItem threeDimSetting = new JMenuItem("Enter 3D View");
+        JMenuItem threeDimSetting = new JMenuItem(bundle.getString("enter3DView"));
         threeDimSetting.addActionListener(e -> {
             jmeScene.setThreeDView();
-            System.out.println("Entered 3D View");
         });
         viewMenu.add(threeDimSetting);
 
-        JMenu settingsMenu = new JMenu("Settings");
-        JMenuItem gridSetting = new JMenuItem("Edit Grid Size");
+        JMenu kpiMenu = new JMenu(bundle.getString("kpiMenu"));
+        JMenuItem viewKpisItem = new JMenuItem(bundle.getString("viewKpis"));
+        viewKpisItem.addActionListener(e -> {
+            kpiViewer.setVisible(true);
+        });
+        kpiViewer = new KPIViewer(bundle);
+        kpiViewer.setVisible(false);
+
+        JMenuItem editKpisItem = new JMenuItem(bundle.getString("editKpis"));
+        editKpisItem.addActionListener(e -> System.out.println("Edit KPIs selected."));
+        kpiMenu.add(viewKpisItem);
+        kpiMenu.add(editKpisItem);
+
+        JMenu settingsMenu = new JMenu(bundle.getString("settings"));
+        JMenuItem gridSetting = new JMenuItem(bundle.getString("editGridSize"));
         gridSetting.addActionListener(e -> {
             gridSettingUI.showGridDialog(frame);
         });
@@ -148,6 +159,7 @@ public class PlannerUI {
 
         menuBar.add(projectMenu);
         menuBar.add(editMenu);
+        menuBar.add(kpiMenu);
         menuBar.add(settingsMenu);
         menuBar.add(viewMenu);
 
@@ -179,7 +191,7 @@ public class PlannerUI {
             Thread.currentThread().interrupt();
         }
 
-        jmeScene.setPropertiesPanel(propertiesPanel, layersManager);
+        jmeScene.setPropertiesPanel(propertiesPanel, layersManager, bundle);
 
         JPanel jmePanel = new JPanel(new BorderLayout());
         jmePanel.add(jmeScene.getCanvas(), BorderLayout.CENTER);
@@ -191,6 +203,7 @@ public class PlannerUI {
         gridSettingUI.setWareSkladInit(this.jmeScene);
         projectSaver = new ProjectSaver(jmeScene.undoManager, jmeScene.modelLoader, jmeScene.floorPlacer);
         projectLoader = new ProjectLoader(jmeScene.undoManager, jmeScene.getAssetManager(), jmeScene);
+        kpiViewer.setJmeScene(jmeScene);
         return plannerPanel;
     }
 
@@ -222,6 +235,6 @@ public class PlannerUI {
     }
 
     private JPanel createLayoutPanel() {
-        return new HierarchyUI(jmeScene, jmeScene.undoManager);
+        return new HierarchyUI(bundle, jmeScene, jmeScene.undoManager);
     }
 }

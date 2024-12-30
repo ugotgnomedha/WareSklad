@@ -118,8 +118,8 @@ public class AssetsUI {
 
         Image image = icon.getImage();
 
-        int width = 50;  // Desired width for the icon
-        int height = 50; // Desired height for the icon
+        int width = 50;
+        int height = 50;
 
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
 

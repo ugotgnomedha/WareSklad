@@ -1,4 +1,4 @@
-package tech;
+package saverLoader;
 
 import UndoRedo.UndoManager;
 import com.google.gson.*;
@@ -10,6 +10,8 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.*;
 import com.jme3.scene.shape.Box;
 import com.jme3.util.BufferUtils;
+import tech.FloorPlacer;
+import tech.WareSkladInit;
 import ui.Grid;
 
 import java.io.FileReader;
@@ -110,6 +112,7 @@ public class ProjectLoader {
             spatial.setMaterial(material);
         }
 
+        spatial.setName(name);
         spatial.setLocalTranslation(position);
         Quaternion quatRotation = new Quaternion();
         quatRotation.fromAngles(rotation.x, rotation.y, rotation.z);
@@ -143,12 +146,12 @@ public class ProjectLoader {
         lineGeometry.setLocalTranslation(start);
 
         int floorId = objectJson.get("floorId").getAsInt();
-        floorPlacer.floorSegmentToFloorId.put(lineGeometry, floorId);
-        floorPlacer.floorIdToSegments.computeIfAbsent(floorId, k -> new ArrayList<>()).add(lineGeometry);
+        undoManager.getFloorSegmentToFloorId().put(lineGeometry, floorId);
+        undoManager.getFloorIdToSegments().computeIfAbsent(floorId, k -> new ArrayList<>()).add(lineGeometry);
 
-        floorPlacer.floorSegmentDistances.put(lineGeometry, length);
+        undoManager.getFloorSegmentDistances().put(lineGeometry, length);
 
-        floorPlacer.floorSegmentVertices.put(lineGeometry, vertices);
+        undoManager.getFloorSegmentVertices().put(lineGeometry, vertices);
 
         rootNode.attachChild(lineGeometry);
 
@@ -195,13 +198,13 @@ public class ProjectLoader {
         floorGeometry.setLocalTranslation(center.setY(Grid.GRID_Y_LEVEL));
 
         float area = objectJson.get("area").getAsFloat();
-        floorPlacer.floorCompleteAreas.put(floorGeometry, area);
+        undoManager.getFloorCompleteAreas().put(floorGeometry, area);
 
         int floorId = objectJson.get("floorId").getAsInt();
-        floorPlacer.floorSegmentToFloorId.put(floorGeometry, floorId);
-        floorPlacer.floorIdToSegments.computeIfAbsent(floorId, k -> new ArrayList<>()).add(floorGeometry);
-        floorPlacer.completeFloorVertices.put(floorGeometry, floorVertices);
-        floorPlacer.completeFloorCenters.put(floorId, center);
+        undoManager.getFloorSegmentToFloorId().put(floorGeometry, floorId);
+        undoManager.getFloorIdToSegments().computeIfAbsent(floorId, k -> new ArrayList<>()).add(floorGeometry);
+        undoManager.getCompleteFloorVertices().put(floorGeometry, floorVertices);
+        undoManager.getCompleteFloorCenters().put(floorId, center);
 
         rootNode.attachChild(floorGeometry);
 

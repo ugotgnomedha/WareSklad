@@ -12,10 +12,8 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class HierarchyUI extends JPanel implements UndoRedoListener {
     private final WareSkladInit jmeScene;
@@ -23,8 +21,10 @@ public class HierarchyUI extends JPanel implements UndoRedoListener {
     private JTree objectTree;
     private DefaultMutableTreeNode rootNode;
     private FloorPlacer floorPlacer;
+    private ResourceBundle bundle;
 
-    public HierarchyUI(WareSkladInit jmeScene, UndoManager undoManager) {
+    public HierarchyUI(ResourceBundle bundle, WareSkladInit jmeScene, UndoManager undoManager) {
+        this.bundle = bundle;
         this.jmeScene = jmeScene;
         this.undoManager = undoManager;
         this.floorPlacer = jmeScene.floorPlacer;
@@ -34,9 +34,9 @@ public class HierarchyUI extends JPanel implements UndoRedoListener {
 
     private void initializeUI() {
         this.setLayout(new BorderLayout());
-        this.setBorder(BorderFactory.createTitledBorder("Hierarchy"));
+        this.setBorder(BorderFactory.createTitledBorder(bundle.getString("hierarchy")));
 
-        rootNode = new DefaultMutableTreeNode("Scene");
+        rootNode = new DefaultMutableTreeNode(bundle.getString("scene"));
         objectTree = new JTree(new DefaultTreeModel(rootNode));
         objectTree.setRootVisible(true);
         objectTree.setShowsRootHandles(true);
@@ -129,7 +129,7 @@ public class HierarchyUI extends JPanel implements UndoRedoListener {
     }
 
     private int getFloorIdFromCompleteFloor(Spatial object) {
-        for (Map.Entry<Integer, List<Geometry>> entry : floorPlacer.floorIdToSegments.entrySet()) {
+        for (Map.Entry<Integer, List<Geometry>> entry : undoManager.getFloorIdToSegments().entrySet()) {
             if (entry.getValue().contains(object)) {
                 return entry.getKey();
             }
@@ -139,7 +139,7 @@ public class HierarchyUI extends JPanel implements UndoRedoListener {
 
     private int getFloorIdFromSegment(Spatial object) {
         if (object instanceof Geometry) {
-            return floorPlacer.floorSegmentToFloorId.getOrDefault(object, -1);
+            return undoManager.getFloorSegmentToFloorId().getOrDefault(object, -1);
         }
         return -1;
     }
