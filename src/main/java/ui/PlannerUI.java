@@ -175,10 +175,6 @@ public class PlannerUI {
         jmeScene.createCanvas();
         JmeCanvasContext ctx = (JmeCanvasContext) jmeScene.getContext();
         ctx.setSystemListener(jmeScene);
-
-        Canvas jmeCanvas = ctx.getCanvas();
-        jmeCanvas.setPreferredSize(new Dimension(800, 600));
-        plannerPanel.add(jmeCanvas, BorderLayout.CENTER);
         jmeScene.setPauseOnLostFocus(false);
 
         jmeScene.startCanvas();
@@ -193,10 +189,7 @@ public class PlannerUI {
 
         jmeScene.setPropertiesPanel(propertiesPanel, layersManager, bundle);
 
-        JPanel jmePanel = new JPanel(new BorderLayout());
-        jmePanel.add(jmeScene.getCanvas(), BorderLayout.CENTER);
-
-        plannerPanel.add(jmePanel, BorderLayout.CENTER);
+        plannerPanel.add(jmeScene.getCanvas());
         propertiesPanel.setObjectControls(jmeScene.objectControls);
         propertiesPanel.setMeasureTool(jmeScene.measureTool);
         propertiesPanel.setDeleteObject(jmeScene.deleteObject);

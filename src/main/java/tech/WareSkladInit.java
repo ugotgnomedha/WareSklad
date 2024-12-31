@@ -10,6 +10,7 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.scene.Geometry;
@@ -81,15 +82,19 @@ public class WareSkladInit extends SimpleApplication {
 
         grid.addGrid();
 
-        AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(ambientLight);
+        // Scene light.
+        DirectionalLight light1 = new DirectionalLight();
+        light1.setDirection(new Vector3f(1, 1, 1).normalizeLocal());
+        light1.setColor(ColorRGBA.White);
+        rootNode.addLight(light1);
+
+        DirectionalLight light2 = new DirectionalLight();
+        light2.setDirection(new Vector3f(-1, -1, -1).normalizeLocal());
+        light2.setColor(ColorRGBA.White);
+        rootNode.addLight(light2);
 
         AppSettings settings = new AppSettings(true);
         settings.setResizable(true);
-        settings.setWidth(1000);
-        settings.setHeight(800);
-        settings.setFullscreen(false);
         this.setSettings(settings);
         this.setDisplayStatView(false);
         this.setDisplayFps(false);
