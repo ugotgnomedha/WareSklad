@@ -468,34 +468,6 @@ public class FloorPlacer {
         return Math.abs(area / 2.0f);
     }
 
-    public Map<Geometry, Float> getFloorCompleteAreas() {
-        return undoManager.getFloorCompleteAreas();
-    }
-
-    public Map<Geometry, Float> getFloorSegmentDistances() {
-        return undoManager.getFloorSegmentDistances();
-    }
-
-    public Map<Integer, Vector3f> getCompleteFloorCenters() {
-        return undoManager.getCompleteFloorCenters();
-    }
-
-    public Map<Geometry, Integer> getFloorSegmentToFloorId() {
-        return undoManager.getFloorSegmentToFloorId();
-    }
-
-    public Map<Integer, List<Geometry>> getFloorIdToSegments() {
-        return undoManager.getFloorIdToSegments();
-    }
-
-    public Map<Geometry, List<Vector3f>> getFloorSegmentVertices() {
-        return undoManager.getFloorSegmentVertices();
-    }
-
-    public Map<Geometry, List<Vector3f>> getCompleteFloorVertices() {
-        return undoManager.getCompleteFloorVertices();
-    }
-
     public float calculateTotalFloorArea() {
         float totalArea = 0.0f;
         for (Float area : undoManager.getFloorCompleteAreas().values()) {

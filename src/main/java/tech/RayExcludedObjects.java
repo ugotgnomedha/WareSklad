@@ -4,7 +4,9 @@ public enum RayExcludedObjects {
     OUTLINE("Outline"),
     HIGHLIGHT("Highlight"),
     FLOORSEGMENT("FloorSegment"),
-    COMPLETEFLOOR("CompleteFloor");
+    COMPLETEFLOOR("CompleteFloor"),
+    PLAINAREA("PlainArea"),
+    PREVIEWPLAINAREA("PreviewPlainArea");
 
     private final String objectName;
 

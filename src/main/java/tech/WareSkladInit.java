@@ -48,6 +48,7 @@ public class WareSkladInit extends SimpleApplication {
     private BitmapText zoomInfoText;
 
     public FloorPlacer floorPlacer;
+    public PlainAreaPlacer plainAreaPlacer;
     public MeasureTool measureTool;
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
@@ -61,6 +62,7 @@ public class WareSkladInit extends SimpleApplication {
         this.layersManager = layersManager;
         this.propertiesPanel = propertiesPanel;
         this.propertiesPanel.setLayersManager(layersManager);
+        this.propertiesPanel.setUndoManager(undoManager);
         this.objectControls.setPropertiesPanel(propertiesPanel);
         this.geometrySelectionHandler.setPropertiesPanel(propertiesPanel);
     }
@@ -105,9 +107,11 @@ public class WareSkladInit extends SimpleApplication {
 
         floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager, this);
 
+        plainAreaPlacer = new PlainAreaPlacer(rootNode, assetManager, inputManager, cam, undoManager, this);
+
         measureTool = new MeasureTool(rootNode, assetManager, inputManager, cam);
 
-        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, measureTool, this);
+        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, plainAreaPlacer, measureTool, this);
 
         setupMouseClickListener();
 
@@ -116,7 +120,7 @@ public class WareSkladInit extends SimpleApplication {
         uiLinesDrawer = new UILinesDrawer();
         uiLinesDrawer.addLines(this, rootNode);
 
-        geometrySelectionHandler = new GeometrySelectionHandler(floorPlacer);
+        geometrySelectionHandler = new GeometrySelectionHandler(undoManager, modelLoader);
         selectionHandlers.put(Geometry.class, geometrySelectionHandler);
 
         initLatch.countDown();
@@ -468,6 +472,7 @@ public class WareSkladInit extends SimpleApplication {
         zoomInfoText.setText("Zoom: " + cameraController.getCurrentZoom());
 
         floorPlacer.updatePreview();
+        plainAreaPlacer.updatePreview();
 
         measureTool.updateMeasureToolPreview();
     }
