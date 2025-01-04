@@ -65,7 +65,6 @@ public class KPIViewer extends JFrame {
         add(rightPanel);
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setVisible(true);
     }
 
     private void handleStorageSpaceUtilisation(ActionEvent e) {

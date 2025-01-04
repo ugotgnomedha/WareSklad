@@ -126,10 +126,16 @@ public class CatalogueLoader {
         defaultItem4.setItemImage("Textures/Images/Icons/default_measureTool01.png");
         defaultItem4.setModelPath("Models/default_measureTool01.j3o");
 
+        CatalogueItem defaultItem5 = new CatalogueItem();
+        defaultItem5.setName("Plain-Area");
+        defaultItem5.setItemImage("Textures/Images/Icons/default_plainArea.png");
+        defaultItem5.setModelPath("Models/default_plainArea.j3o");
+
         List<CatalogueItem> items = new ArrayList<>();
         items.add(defaultItem1);
         items.add(defaultItem2);
         items.add(defaultItem4);
+        items.add(defaultItem5);
         defaultFolder.setItems(items);
 
         List<Folder> folders = new ArrayList<>();
@@ -143,7 +149,8 @@ public class CatalogueLoader {
         return Arrays.asList(
                 "Models/default_floor01.j3o",
                 "Models/default_wall01.j3o",
-                "Models/default_measureTool01.j3o"
+                "Models/default_measureTool01.j3o",
+                "Models/default_plainArea.j3o"
         );
     }
 }

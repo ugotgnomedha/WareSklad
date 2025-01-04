@@ -1,18 +1,21 @@
 package tech;
 
+import UndoRedo.UndoManager;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import ui.PropertiesPanel;
 
 public class GeometrySelectionHandler implements SelectionHandler {
-    private final FloorPlacer floorPlacer;
+    private final UndoManager undoManager;
     private PropertiesPanel propertiesPanel;
+    private ModelLoader modelLoader;
 
-    public GeometrySelectionHandler(FloorPlacer floorPlacer) {
-        this.floorPlacer = floorPlacer;
+    public GeometrySelectionHandler(UndoManager undoManager, ModelLoader modelLoader) {
+        this.undoManager = undoManager;
+        this.modelLoader = modelLoader;
     }
 
-    public void setPropertiesPanel(PropertiesPanel propertiesPanel){
+    public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
     }
 
@@ -22,21 +25,35 @@ public class GeometrySelectionHandler implements SelectionHandler {
             Geometry selectedGeometry = (Geometry) object;
 
             Float distance = null;
-            Float area = null;
+            Float floorArea = null;
+            Float plainArea = null;
+            boolean rackShelf = false;
 
-            if (floorPlacer.getFloorSegmentDistances().containsKey(selectedGeometry)) {
-                distance = floorPlacer.getFloorSegmentDistances().get(selectedGeometry);
+            if (undoManager.getFloorSegmentDistances().containsKey(selectedGeometry)) {
+                distance = undoManager.getFloorSegmentDistances().get(selectedGeometry);
             }
 
-            if (floorPlacer.getFloorCompleteAreas().containsKey(selectedGeometry)) {
-                area = floorPlacer.getFloorCompleteAreas().get(selectedGeometry);
+            if (undoManager.getFloorCompleteAreas().containsKey(selectedGeometry)) {
+                floorArea = undoManager.getFloorCompleteAreas().get(selectedGeometry);
+            }
+
+            if (modelLoader.getModelPath(object) != null && modelLoader.getModelPath(object).contains("/RackingSystems/")) {
+                rackShelf = true;
+            }
+
+            if (undoManager.getPlainAreaCompleteAreas().containsKey(selectedGeometry)) {
+                plainArea = undoManager.getPlainAreaCompleteAreas().get(object);
             }
 
             if (propertiesPanel != null) {
                 if (distance != null) {
                     propertiesPanel.updateDynamicSectionToFloorSegmentProperties(distance);
-                } else if (area != null) {
-                    propertiesPanel.updateDynamicSectionToCompleteFloorProperties(area);
+                } else if (floorArea != null) {
+                    propertiesPanel.updateDynamicSectionToCompleteFloorProperties(floorArea);
+                } else if (rackShelf) {
+                    propertiesPanel.updateDynamicSectionToRackShelf();
+                } else if (plainArea != null) {
+                    propertiesPanel.updateDynamicSectionToPlainAreaProperties(plainArea);
                 } else {
                     propertiesPanel.updateDynamicSectionToDefaultProperties(selectedGeometry);
                 }

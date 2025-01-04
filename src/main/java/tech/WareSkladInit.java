@@ -10,6 +10,7 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.scene.Geometry;
@@ -47,6 +48,7 @@ public class WareSkladInit extends SimpleApplication {
     private BitmapText zoomInfoText;
 
     public FloorPlacer floorPlacer;
+    public PlainAreaPlacer plainAreaPlacer;
     public MeasureTool measureTool;
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
@@ -60,6 +62,7 @@ public class WareSkladInit extends SimpleApplication {
         this.layersManager = layersManager;
         this.propertiesPanel = propertiesPanel;
         this.propertiesPanel.setLayersManager(layersManager);
+        this.propertiesPanel.setUndoManager(undoManager);
         this.objectControls.setPropertiesPanel(propertiesPanel);
         this.geometrySelectionHandler.setPropertiesPanel(propertiesPanel);
     }
@@ -81,15 +84,19 @@ public class WareSkladInit extends SimpleApplication {
 
         grid.addGrid();
 
-        AmbientLight ambientLight = new AmbientLight();
-        ambientLight.setColor(ColorRGBA.White.mult(1.3f));
-        rootNode.addLight(ambientLight);
+        // Scene light.
+        DirectionalLight light1 = new DirectionalLight();
+        light1.setDirection(new Vector3f(1, 1, 1).normalizeLocal());
+        light1.setColor(ColorRGBA.White);
+        rootNode.addLight(light1);
+
+        DirectionalLight light2 = new DirectionalLight();
+        light2.setDirection(new Vector3f(-1, -1, -1).normalizeLocal());
+        light2.setColor(ColorRGBA.White);
+        rootNode.addLight(light2);
 
         AppSettings settings = new AppSettings(true);
         settings.setResizable(true);
-        settings.setWidth(1000);
-        settings.setHeight(800);
-        settings.setFullscreen(false);
         this.setSettings(settings);
         this.setDisplayStatView(false);
         this.setDisplayFps(false);
@@ -100,9 +107,11 @@ public class WareSkladInit extends SimpleApplication {
 
         floorPlacer = new FloorPlacer(rootNode, assetManager, inputManager, cam, undoManager, this);
 
+        plainAreaPlacer = new PlainAreaPlacer(rootNode, assetManager, inputManager, cam, undoManager, this);
+
         measureTool = new MeasureTool(rootNode, assetManager, inputManager, cam);
 
-        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, measureTool, this);
+        modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, plainAreaPlacer, measureTool, this);
 
         setupMouseClickListener();
 
@@ -111,7 +120,7 @@ public class WareSkladInit extends SimpleApplication {
         uiLinesDrawer = new UILinesDrawer();
         uiLinesDrawer.addLines(this, rootNode);
 
-        geometrySelectionHandler = new GeometrySelectionHandler(floorPlacer);
+        geometrySelectionHandler = new GeometrySelectionHandler(undoManager, modelLoader);
         selectionHandlers.put(Geometry.class, geometrySelectionHandler);
 
         initLatch.countDown();
@@ -463,6 +472,7 @@ public class WareSkladInit extends SimpleApplication {
         zoomInfoText.setText("Zoom: " + cameraController.getCurrentZoom());
 
         floorPlacer.updatePreview();
+        plainAreaPlacer.updatePreview();
 
         measureTool.updateMeasureToolPreview();
     }

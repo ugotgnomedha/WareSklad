@@ -2,3 +2,5 @@
 2: Bug: JME view lighting in the scene becomes dark after screen resize (Possibly MacOS only).
 3: Idea: New snapping type - object to object snapping.
 4: Idea: New setting for grid layout - Centered Grid (current default grid that starts at the origin (0, 0, 0) of the world and goes in both negative and positive directions) or Corner-based Grid (origin at corner of world 0 0 0 and goes only in positive direction)
+5: Add more simulations
+6: Add more KPIs

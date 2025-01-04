@@ -3,14 +3,23 @@ package UndoRedo;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
+import tech.Pallet;
+import tech.RackSettings;
+import tech.Tag;
+import tech.TagManager;
 
 import java.util.*;
+import java.util.List;
 
 public class UndoManager {
     private Stack<UndoableAction> undoStack = new Stack<>();
     private Stack<UndoableAction> redoStack = new Stack<>();
     private List<UndoRedoListener> listeners = new ArrayList<>();
     private List<Spatial> sceneObjects = new ArrayList<>();
+    private HashMap<Spatial, Tag> tagMap = new HashMap<>();
+    private ArrayList<Tag> tags = new ArrayList<>();
+    private TagManager tagManager = new TagManager();
+    private final Map<Spatial, RackSettings> rackSettingsMap = new HashMap<>();
 
     private final Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
     private final Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
@@ -19,6 +28,8 @@ public class UndoManager {
     private final Map<Integer, List<Geometry>> floorIdToSegments = new HashMap<>();
     private final Map<Geometry, List<Vector3f>> floorSegmentVertices = new HashMap<>();
     private final Map<Geometry, List<Vector3f>> completeFloorVertices = new HashMap<>();
+    private final Map<Geometry, Float> plainAreaCompleteAreas = new HashMap<>();
+    private ArrayList<Pallet> pallets = new ArrayList<>();
 
     public Map<Geometry, Float> getFloorCompleteAreas() {
         return floorCompleteAreas;
@@ -65,6 +76,10 @@ public class UndoManager {
             FloorDeleteAction floorDeleteAction = (FloorDeleteAction) action;
             removeFloorRelatedData(floorDeleteAction);
             sceneObjects.removeAll(floorDeleteAction.getFloorGeometries());
+        } else if (action instanceof PlainAreaPlacementAction) {
+            PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
+            sceneObjects.add(plainAreaAction.getPlainAreaGeometry());
+            plainAreaCompleteAreas.putAll(plainAreaAction.getPlainAreaCompleteAreas());
         }
 
         notifyListeners();
@@ -121,6 +136,10 @@ public class UndoManager {
                 }
 
                 floorDeleteAction.getCompleteFloorCenters().forEach(completeFloorCenters::put);
+            } else if (action instanceof PlainAreaPlacementAction) {
+                PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
+                sceneObjects.remove(plainAreaAction.getPlainAreaGeometry());
+                plainAreaAction.getPlainAreaCompleteAreas().keySet().forEach(plainAreaCompleteAreas::remove);
             }
 
             notifyListeners();
@@ -178,6 +197,10 @@ public class UndoManager {
                     floorSegmentVertices.remove(geometry);
                     completeFloorVertices.remove(geometry);
                 }
+            } else if (action instanceof PlainAreaPlacementAction) {
+                PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
+                sceneObjects.add(plainAreaAction.getPlainAreaGeometry());
+                plainAreaAction.getPlainAreaCompleteAreas().forEach(plainAreaCompleteAreas::put);
             }
 
             notifyListeners();
@@ -243,6 +266,90 @@ public class UndoManager {
                 }
             }
         }
+    }
+
+    public void addTag(Tag tag) {
+        if (tag != null && !tags.contains(tag)) {
+            tags.add(tag);
+        }
+    }
+
+    public void addSpatialWithTag(Spatial spatial, Tag tag) {
+        if (spatial != null && tag != null) {
+            tagMap.put(spatial, tag);
+            tagManager.addSpatialWithTag(spatial, tag);
+        }
+    }
+
+    public void removeSpatialTag(Spatial spatial) {
+        if (spatial != null) {
+            Tag currentTag = tagMap.get(spatial);
+            if (currentTag != null) {
+                tagMap.remove(spatial);
+                tagManager.removeSpatialTag(spatial);
+            }
+        }
+    }
+
+    public ArrayList<Tag> getTags() {
+        return new ArrayList<>(tags);
+    }
+
+    public HashMap<Spatial, Tag> getTagMap() {
+        return this.tagMap;
+    }
+
+    public void deleteTag(Tag tag) {
+        if (tag != null && tags.contains(tag)) {
+            tags.remove(tag);
+            tagMap.entrySet().removeIf(entry -> entry.getValue().equals(tag));
+        }
+    }
+
+    public Map<Spatial, RackSettings> getRackSettingsMap() {
+        return rackSettingsMap;
+    }
+
+    public void setRackSettings(Spatial rack, RackSettings settings) {
+        if (rackSettingsMap.containsKey(rack)) {
+            rackSettingsMap.replace(rack, settings);
+        } else {
+            rackSettingsMap.put(rack, settings);
+        }
+    }
+
+    public Map<Geometry, Float> getPlainAreaCompleteAreas() {
+        return plainAreaCompleteAreas;
+    }
+
+    public List<Pallet> getPallets() {
+        return pallets;
+    }
+
+    public void addPallet(Pallet pallet) {
+        pallets.add(pallet);
+    }
+
+    public void updatePallet(Pallet updatedPallet) {
+        boolean found = false;
+        for (int i = 0; i < pallets.size(); i++) {
+            Pallet existingPallet = pallets.get(i);
+            if (existingPallet.getId().equals(updatedPallet.getId())) {
+                existingPallet.setHeight(updatedPallet.getHeight());
+                existingPallet.setWidth(updatedPallet.getWidth());
+                existingPallet.setDepth(updatedPallet.getDepth());
+                existingPallet.setWeight(updatedPallet.getWeight());
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            throw new IllegalArgumentException("Pallet with ID " + updatedPallet.getId() + " not found.");
+        }
+    }
+
+    public void removePallet(Pallet pallet) {
+        pallets.remove(pallet);
     }
 
     public Stack<UndoableAction> getUndoStack() {

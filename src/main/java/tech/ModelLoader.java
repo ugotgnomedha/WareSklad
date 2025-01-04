@@ -6,6 +6,7 @@ import com.jme3.asset.AssetManager;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bounding.BoundingSphere;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.Node;
 import ui.Grid;
@@ -20,16 +21,18 @@ public class ModelLoader {
     private final UndoManager undoManager;
     private final List<String> defaultItemPaths;
     private final FloorPlacer floorPlacer;
+    private final PlainAreaPlacer plainAreaPlacer;
     private final MeasureTool measureTool;
     private final WareSkladInit wareSkladInit;
 
     private final Map<Spatial, String> modelPathsMap;
 
-    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer, MeasureTool measureTool, WareSkladInit wareSkladInit) {
+    public ModelLoader(Node rootNode, AssetManager assetManager, UndoManager undoManager, FloorPlacer floorPlacer, PlainAreaPlacer plainAreaPlacer, MeasureTool measureTool, WareSkladInit wareSkladInit) {
         this.rootNode = rootNode;
         this.assetManager = assetManager;
         this.undoManager = undoManager;
         this.floorPlacer = floorPlacer;
+        this.plainAreaPlacer = plainAreaPlacer;
         this.measureTool = measureTool;
         this.wareSkladInit = wareSkladInit;
         this.modelPathsMap = new HashMap<>();
@@ -38,14 +41,22 @@ public class ModelLoader {
 
     public void loadAndPlaceModel(String modelPath, Vector3f position) {
         if (isDefaultItem(modelPath)) {
-            if (modelPath.equals("Models/default_floor01.j3o")) {
-                wareSkladInit.deselectObject();
-                floorPlacer.setFloorMode(true);
-                return;
-            } else if (modelPath.equals("Models/default_measureTool01.j3o")){
-                wareSkladInit.deselectObject();
-                measureTool.setMeasureMode(true);
-                return;
+            switch (modelPath) {
+                case "Models/default_floor01.j3o" -> {
+                    wareSkladInit.deselectObject();
+                    floorPlacer.setFloorMode(true);
+                    return;
+                }
+                case "Models/default_measureTool01.j3o" -> {
+                    wareSkladInit.deselectObject();
+                    measureTool.setMeasureMode(true);
+                    return;
+                }
+                case "Models/default_plainArea.j3o" -> {
+                    wareSkladInit.deselectObject();
+                    plainAreaPlacer.setPlainAreaMode(true);
+                    return;
+                }
             }
 
             System.out.println("Default item detected: " + modelPath + ". Skipping loading in scene.");

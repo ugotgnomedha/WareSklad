@@ -2,15 +2,14 @@ package ui;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.function.Consumer;
 
+import UndoRedo.UndoManager;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
@@ -24,8 +23,11 @@ public class PropertiesPanel extends JPanel {
     private JTextField positionXField, positionYField, positionZField;
     private JTextField rotationXField, rotationYField, rotationZField;
     private JTextField scaleXField, scaleYField, scaleZField;
+    private JPanel transformContent;
 
     private JButton deleteButton;
+
+    private JComboBox<String> tagDropdown;
 
     private Consumer<String> onNameChange;
     private Consumer<Vector3f> onPositionChange;
@@ -46,6 +48,7 @@ public class PropertiesPanel extends JPanel {
     private ColorRGBA selectedColor = new ColorRGBA(1, 1, 1, 1);
     private JPanel colorPreview;
     private ResourceBundle bundle;
+    private UndoManager undoManager;
 
     private JPanel dynamicSection;
 
@@ -65,6 +68,10 @@ public class PropertiesPanel extends JPanel {
         this.layersManager = layersManager;
     }
 
+    public void setUndoManager(UndoManager undoManager){
+        this.undoManager = undoManager;
+    }
+
     public void setSelectedObject(Spatial object) {
         this.selectedObject = object;
 
@@ -75,6 +82,7 @@ public class PropertiesPanel extends JPanel {
         updateLayerButtons(selectedLayer);
 
         deleteButton.setEnabled(selectedObject != null);
+        updateTagDropdown(undoManager.getTags());
     }
 
     public PropertiesPanel(ResourceBundle bundle) {
@@ -84,9 +92,14 @@ public class PropertiesPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         nameField = createCompactTextField(15);
+        tagDropdown = new JComboBox<>(new String[]{"---"});
+        tagDropdown.setMaximumSize(new Dimension(150, 30));
+        tagDropdown.addActionListener(e -> tagDropdownActionPerformed());
+
         JPanel namePanel = new JPanel(new BorderLayout());
         namePanel.add(new JLabel(bundle.getString("name_label")), BorderLayout.WEST);
         namePanel.add(nameField, BorderLayout.CENTER);
+        namePanel.add(tagDropdown, BorderLayout.EAST);
         namePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         namePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
         add(namePanel);
@@ -185,7 +198,7 @@ public class PropertiesPanel extends JPanel {
     }
 
     private JPanel createTransformPanel() {
-        JPanel transformContent = new JPanel();
+        transformContent = new JPanel();
         transformContent.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -472,6 +485,99 @@ public class PropertiesPanel extends JPanel {
         dynamicSection.repaint();
     }
 
+    public void updateDynamicSectionToPlainAreaProperties(float area){
+        dynamicSection.removeAll();
+        dynamicSection.add(new JLabel(bundle.getString("plain_area_area") + String.format("%.2f", area)));
+        dynamicSection.revalidate();
+        dynamicSection.repaint();
+    }
+
+    public void updateDynamicSectionToRackShelf() {
+        dynamicSection.removeAll();
+
+        int transformContentWidth = transformContent.getPreferredSize().width;
+
+        JPanel dynamicPanel = new JPanel();
+        dynamicPanel.setLayout(new BoxLayout(dynamicPanel, BoxLayout.Y_AXIS));
+
+        JScrollPane scrollPane = new JScrollPane(dynamicPanel);
+        scrollPane.setPreferredSize(new Dimension(transformContentWidth, 200));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+
+        Dimension fieldSize = new Dimension(transformContentWidth, 25);
+
+        dynamicPanel.add(new JLabel(bundle.getString("rack_physical_dimensions")));
+
+        JSpinner heightSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
+        heightSpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("rack_height")));
+        dynamicPanel.add(heightSpinner);
+
+        JSpinner widthSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
+        widthSpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("rack_width")));
+        dynamicPanel.add(widthSpinner);
+
+        JSpinner depthSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
+        depthSpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("rack_depth")));
+        dynamicPanel.add(depthSpinner);
+
+        JSpinner shelvesSpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+        shelvesSpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("rack_shelves")));
+        dynamicPanel.add(shelvesSpinner);
+
+        dynamicPanel.add(new JLabel(bundle.getString("rack_weight_capacity")));
+
+        JSpinner perShelfCapacitySpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+        perShelfCapacitySpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("shelf_capacity")));
+        dynamicPanel.add(perShelfCapacitySpinner);
+
+        JSpinner totalCapacitySpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+        totalCapacitySpinner.setPreferredSize(fieldSize);
+        dynamicPanel.add(new JLabel(bundle.getString("total_capacity")));
+        dynamicPanel.add(totalCapacitySpinner);
+
+        if (selectedObject != null) {
+            RackSettings existingSettings = undoManager.getRackSettingsMap().get(selectedObject);
+            if (existingSettings != null) {
+                heightSpinner.setValue(existingSettings.getHeight());
+                widthSpinner.setValue(existingSettings.getWidth());
+                depthSpinner.setValue(existingSettings.getDepth());
+                shelvesSpinner.setValue(existingSettings.getShelves());
+                perShelfCapacitySpinner.setValue(existingSettings.getPerShelfCapacity());
+                totalCapacitySpinner.setValue(existingSettings.getTotalCapacity());
+            }
+        }
+
+        dynamicSection.add(scrollPane);
+
+        JButton setSettingsButton = new JButton(bundle.getString("set_settings"));
+        setSettingsButton.addActionListener(e -> {
+            double height = (Double) heightSpinner.getValue();
+            double width = (Double) widthSpinner.getValue();
+            double depth = (Double) depthSpinner.getValue();
+            int shelves = (Integer) shelvesSpinner.getValue();
+            int perShelfCapacity = (Integer) perShelfCapacitySpinner.getValue();
+            int totalCapacity = (Integer) totalCapacitySpinner.getValue();
+
+            RackSettings rackSettings = new RackSettings(height, width, depth, shelves, perShelfCapacity, totalCapacity);
+
+            if (selectedObject != null) {
+                undoManager.setRackSettings(selectedObject, rackSettings);
+            }
+
+            System.out.println(rackSettings);
+        });
+
+        dynamicPanel.add(setSettingsButton);
+
+        dynamicSection.revalidate();
+        dynamicSection.repaint();
+    }
+
     public void updateDynamicSectionToDefaultProperties(Spatial object) {
         dynamicSection.removeAll();
         if (object != null) {
@@ -481,6 +587,56 @@ public class PropertiesPanel extends JPanel {
         }
         dynamicSection.revalidate();
         dynamicSection.repaint();
+    }
+
+    public void updateTagDropdown(ArrayList<Tag> currentTags) {
+        String[] tagNames = new String[currentTags.size() + 1];
+        tagNames[0] = "---";
+
+        for (int i = 0; i < currentTags.size(); i++) {
+            tagNames[i + 1] = currentTags.get(i).getName();
+        }
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>(tagNames);
+
+        if (selectedObject != null) {
+            Tag selectedTag = undoManager.getTagMap().get(selectedObject);
+
+            if (selectedTag != null) {
+                model.setSelectedItem(selectedTag.getName());
+            } else {
+                model.setSelectedItem("---");
+            }
+        } else {
+            model.setSelectedItem("---");
+        }
+
+        tagDropdown.setModel(model);
+    }
+
+    private void tagDropdownActionPerformed() {
+        if (selectedObject != null) {
+            String selectedTagName = (String) tagDropdown.getSelectedItem();
+
+            if (selectedTagName != null && !selectedTagName.equals("---")) {
+                Tag tagToAdd = null;
+                for (Tag tag : undoManager.getTags()) {
+                    if (tag.getName().equals(selectedTagName)) {
+                        tagToAdd = tag;
+                        break;
+                    }
+                }
+
+                if (tagToAdd != null) {
+                    undoManager.addSpatialWithTag(selectedObject, tagToAdd);
+                    System.out.println("Added tag '" + selectedTagName + "' to selected object.");
+                }
+            } else {
+                undoManager.removeSpatialTag(selectedObject);
+                System.out.println("Removed all tags from selected object.");
+            }
+        } else {
+            System.out.println("No object selected.");
+        }
     }
 
     public void updateProperties(String name, Vector3f position, Vector3f rotation, Vector3f scale, ColorRGBA color) {

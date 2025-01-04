@@ -21,6 +21,8 @@ public class PlannerUI {
     private ProjectSaver projectSaver;
     private ProjectLoader projectLoader;
     private KPIViewer kpiViewer;
+    private TagsUI tagsUI;
+    private SimulationUI simulationUI = new SimulationUI();
     private ResourceBundle bundle;
 
     public PlannerUI(ResourceBundle bundle){
@@ -125,6 +127,10 @@ public class PlannerUI {
         JMenu layersMenu = layersUI.createLayersMenu(frame);
         editMenu.add(layersMenu);
 
+        tagsUI = new TagsUI(bundle);
+        JMenu tagsMenu = tagsUI.createTagsMenu(frame);
+        editMenu.add(tagsMenu);
+
         JMenu viewMenu = new JMenu(bundle.getString("view"));
         JMenuItem twoDimSetting = new JMenuItem(bundle.getString("enter2DView"));
         twoDimSetting.addActionListener(e -> {
@@ -136,6 +142,11 @@ public class PlannerUI {
             jmeScene.setThreeDView();
         });
         viewMenu.add(threeDimSetting);
+        JMenuItem simulationItem = new JMenuItem(bundle.getString("simulation"));
+        simulationItem.addActionListener(e -> {
+            simulationUI.openSimulationFrame();
+        });
+        viewMenu.add(simulationItem);
 
         JMenu kpiMenu = new JMenu(bundle.getString("kpiMenu"));
         JMenuItem viewKpisItem = new JMenuItem(bundle.getString("viewKpis"));
@@ -143,7 +154,6 @@ public class PlannerUI {
             kpiViewer.setVisible(true);
         });
         kpiViewer = new KPIViewer(bundle);
-        kpiViewer.setVisible(false);
 
         JMenuItem editKpisItem = new JMenuItem(bundle.getString("editKpis"));
         editKpisItem.addActionListener(e -> System.out.println("Edit KPIs selected."));
@@ -175,10 +185,6 @@ public class PlannerUI {
         jmeScene.createCanvas();
         JmeCanvasContext ctx = (JmeCanvasContext) jmeScene.getContext();
         ctx.setSystemListener(jmeScene);
-
-        Canvas jmeCanvas = ctx.getCanvas();
-        jmeCanvas.setPreferredSize(new Dimension(800, 600));
-        plannerPanel.add(jmeCanvas, BorderLayout.CENTER);
         jmeScene.setPauseOnLostFocus(false);
 
         jmeScene.startCanvas();
@@ -193,16 +199,16 @@ public class PlannerUI {
 
         jmeScene.setPropertiesPanel(propertiesPanel, layersManager, bundle);
 
-        JPanel jmePanel = new JPanel(new BorderLayout());
-        jmePanel.add(jmeScene.getCanvas(), BorderLayout.CENTER);
-
-        plannerPanel.add(jmePanel, BorderLayout.CENTER);
+        plannerPanel.add(jmeScene.getCanvas());
         propertiesPanel.setObjectControls(jmeScene.objectControls);
         propertiesPanel.setMeasureTool(jmeScene.measureTool);
         propertiesPanel.setDeleteObject(jmeScene.deleteObject);
         gridSettingUI.setWareSkladInit(this.jmeScene);
         projectSaver = new ProjectSaver(jmeScene.undoManager, jmeScene.modelLoader, jmeScene.floorPlacer);
         projectLoader = new ProjectLoader(jmeScene.undoManager, jmeScene.getAssetManager(), jmeScene);
+        tagsUI.setUndoManager(jmeScene.undoManager);
+        tagsUI.setPropertiesPanel(propertiesPanel);
+        simulationUI.setupSimulation(jmeScene.undoManager, bundle, jmeScene);
         kpiViewer.setJmeScene(jmeScene);
         return plannerPanel;
     }
