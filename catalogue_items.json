@@ -8,17 +8,18 @@
       ]
     },
     {
-      "name": "Racking Systems",
+      "name": "Racks",
       "items": [
         { "name": "Rack01", "itemImage": "Textures/Images/Items/RackingSystems/rack01.png", "modelPath": "Models/RackingSystems/rack01.j3o" },
         { "name": "Rack02", "itemImage": "Textures/Images/Items/RackingSystems/rack02.png", "modelPath": "Models/RackingSystems/rack02.j3o" },
-        { "name": "Rack03", "itemImage": "Textures/Images/Items/RackingSystems/rack03.png", "modelPath": "Models/RackingSystems/rack_stackable01.j3o" }
+        { "name": "Rack03", "itemImage": "Textures/Images/Items/RackingSystems/rack03.png", "modelPath": "Models/RackingSystems/rack_stackable01.j3o" },
+        { "name": "Rack_200_180_110cm", "itemImage": "Textures/Images/Items/RackingSystems/rack04.png", "modelPath": "Models/RackingSystems/defaultRack_200cm_180cm_110cm.j3o" }
       ]
     },
     {
       "name": "Pallets",
       "items": [
-        { "name": "Pallet01", "itemImage": "Textures/Images/Items/Pallets/pallet01.png", "modelPath": "Models/Pallets/pallet01.j3o" }
+        { "name": "Pallets 100x100x10cm", "itemImage": "Textures/Images/Items/Pallets/pallet01.png", "modelPath": "Models/Pallets/pallets_100cm_100cm_10cm.j3o" }
       ]
     },
     {
@@ -27,7 +28,8 @@
         { "name": "Lamp01", "itemImage": "Textures/Images/Items/Misc/lamp01.png", "modelPath": "Models/Misc/lamp01.j3o" },
         { "name": "Gas Canister01", "itemImage": "Textures/Images/Items/Misc/gas_can01.png", "modelPath": "Models/Misc/gas_can01.j3o" },
         { "name": "Gas Canister01", "itemImage": "Textures/Images/Items/Misc/trolley01.png", "modelPath": "Models/Misc/trolley01.j3o" },
-        { "name": "ForkLift Truck", "itemImage": "Textures/Images/Items/Misc/forkLiftTruck.png", "modelPath": "Models/Misc/forkLiftTruck.j3o" }
+        { "name": "ForkLift Truck", "itemImage": "Textures/Images/Items/Misc/forkLiftTruck.png", "modelPath": "Models/Misc/forkLiftTruck.j3o" },
+        { "name": "Pillar01", "itemImage": "Textures/Images/Items/Misc/pillar01.png", "modelPath": "Models/Misc/pillar01.j3o" }
       ]
     }
   ]

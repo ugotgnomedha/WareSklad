@@ -72,20 +72,11 @@ public class ModelLoader {
 
             model.setLocalTranslation(position);
 
-            float targetSize = 20.0f;
-            BoundingBox boundingBox = (BoundingBox) model.getWorldBound();
-            if (boundingBox == null) {
-                model.updateModelBound();
-                model.updateGeometricState();
-                boundingBox = (BoundingBox) model.getWorldBound();
-            }
+            float targetSize = Grid.GRID_SPACING;
 
-            float largestExtent = Math.max(boundingBox.getXExtent(),
-                    Math.max(boundingBox.getYExtent(), boundingBox.getZExtent()));
+            Vector3f currentScale = model.getLocalScale();
 
-            float scaleFactor = targetSize / largestExtent;
-
-            model.setLocalScale(scaleFactor);
+            model.setLocalScale(targetSize / currentScale.x, targetSize / currentScale.y, targetSize / currentScale.z);
 
             model.updateModelBound();
             model.updateGeometricState();

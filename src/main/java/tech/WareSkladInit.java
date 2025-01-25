@@ -52,6 +52,7 @@ public class WareSkladInit extends SimpleApplication {
     public MeasureTool measureTool;
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
+    public RackPlacementManager rackPlacementManager;
 
     private boolean is3DMode = false;
     private boolean isMouseWheelPressed = false;
@@ -112,6 +113,8 @@ public class WareSkladInit extends SimpleApplication {
         measureTool = new MeasureTool(rootNode, assetManager, inputManager, cam);
 
         modelLoader = new ModelLoader(rootNode, assetManager, undoManager, floorPlacer, plainAreaPlacer, measureTool, this);
+
+        rackPlacementManager = new RackPlacementManager(undoManager, this);
 
         setupMouseClickListener();
 

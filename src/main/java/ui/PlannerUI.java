@@ -1,5 +1,6 @@
 package ui;
 
+import com.jme3.scene.Geometry;
 import com.jme3.system.JmeCanvasContext;
 import saverLoader.ProjectLoader;
 import saverLoader.ProjectSaver;
@@ -10,6 +11,7 @@ import tech.layers.LayersManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class PlannerUI {
@@ -24,6 +26,8 @@ public class PlannerUI {
     private TagsUI tagsUI;
     private SimulationUI simulationUI = new SimulationUI();
     private ResourceBundle bundle;
+    private CatalogueLoader.Catalogue catalogue;
+    private RackPlacementUI rackPlacementUI;
 
     public PlannerUI(ResourceBundle bundle){
         this.bundle = bundle;
@@ -47,6 +51,9 @@ public class PlannerUI {
         JPanel plannerPanel = createPlannerPanel();
         JPanel assetsPanel = createAssetsPanel();
         JPanel layoutPanel = createLayoutPanel();
+
+        rackPlacementUI = new RackPlacementUI(bundle, jmeScene.undoManager, catalogue);
+        rackPlacementUI.setRackPlacementManager(jmeScene.rackPlacementManager);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(plannerPanel, BorderLayout.CENTER);
@@ -147,6 +154,11 @@ public class PlannerUI {
             simulationUI.openSimulationFrame();
         });
         viewMenu.add(simulationItem);
+        JMenuItem racksPlacementItem = new JMenuItem(bundle.getString("racksPlacement"));
+        racksPlacementItem.addActionListener(e -> {
+            rackPlacementUI.openRacksPlacementFrame();
+        });
+        viewMenu.add(racksPlacementItem);
 
         JMenu kpiMenu = new JMenu(bundle.getString("kpiMenu"));
         JMenuItem viewKpisItem = new JMenuItem(bundle.getString("viewKpis"));
@@ -174,6 +186,52 @@ public class PlannerUI {
         menuBar.add(viewMenu);
 
         return menuBar;
+    }
+
+    private void openRacksPlacementFrame() {
+        JFrame racksFrame = new JFrame(bundle.getString("racksPlacementTitle"));
+        racksFrame.setSize(600, 400);
+        racksFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        racksFrame.setLayout(new BorderLayout());
+
+        String[] columnNames = {bundle.getString("rackDimensions"), bundle.getString("select")};
+        Object[][] data = {
+                {"200x180x110", Boolean.FALSE},
+                {"250x200x120", Boolean.FALSE},
+                {"300x250x150", Boolean.FALSE}
+        };
+        JTable racksTable = new JTable(data, columnNames) {
+            @Override
+            public Class<?> getColumnClass(int column) {
+                return column == 1 ? Boolean.class : String.class;
+            }
+        };
+        JScrollPane scrollPane = new JScrollPane(racksTable);
+        racksFrame.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel controlsPanel = new JPanel(new FlowLayout());
+        JComboBox<String> floorSelector = new JComboBox<>();
+        floorSelector.addItem("---");
+
+        Map<Geometry, Float> floorCompleteAreas = jmeScene.undoManager.getFloorCompleteAreas();
+        floorCompleteAreas.keySet().forEach(geometry -> floorSelector.addItem(geometry.getName()));
+
+        controlsPanel.add(new JLabel(bundle.getString("selectFloor")));
+        controlsPanel.add(floorSelector);
+
+        JButton runButton = new JButton(bundle.getString("generatePlacement"));
+        runButton.addActionListener(e -> {
+            String selectedFloor = (String) floorSelector.getSelectedItem();
+            if (!"---".equals(selectedFloor)) {
+                System.out.println("Selected floor for rack placement: " + selectedFloor);
+            } else {
+                System.out.println("No floor selected.");
+            }
+        });
+        controlsPanel.add(runButton);
+
+        racksFrame.add(controlsPanel, BorderLayout.SOUTH);
+        racksFrame.setVisible(true);
     }
 
     private JPanel createPlannerPanel() {
@@ -222,7 +280,7 @@ public class PlannerUI {
         assetsPanel = assetsUI.getAssetsPanel();
 
         CatalogueLoader loader = new CatalogueLoader();
-        CatalogueLoader.Catalogue catalogue = loader.loadCatalogue("catalogue_items.json");
+        catalogue = loader.loadCatalogue("catalogue_items.json");
         assetsUI.loadCatalogue(catalogue);
 
         return assetsPanel;

@@ -80,6 +80,9 @@ public class UndoManager {
             PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
             sceneObjects.add(plainAreaAction.getPlainAreaGeometry());
             plainAreaCompleteAreas.putAll(plainAreaAction.getPlainAreaCompleteAreas());
+        }  else if (action instanceof RackPlacementAction) {
+            RackPlacementAction rackAction = (RackPlacementAction) action;
+            sceneObjects.addAll(rackAction.getPlacedRacks());
         }
 
         notifyListeners();
@@ -140,12 +143,17 @@ public class UndoManager {
                 PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
                 sceneObjects.remove(plainAreaAction.getPlainAreaGeometry());
                 plainAreaAction.getPlainAreaCompleteAreas().keySet().forEach(plainAreaCompleteAreas::remove);
+            } else if (action instanceof RackPlacementAction) {
+                RackPlacementAction rackAction = (RackPlacementAction) action;
+                sceneObjects.removeAll(rackAction.getPlacedRacks());
+                for (Spatial rack : rackAction.getPlacedRacks()) {
+                    rack.removeFromParent();
+                }
             }
 
             notifyListeners();
         }
     }
-
 
     public void redo() {
         if (!redoStack.isEmpty()) {
@@ -201,6 +209,12 @@ public class UndoManager {
                 PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
                 sceneObjects.add(plainAreaAction.getPlainAreaGeometry());
                 plainAreaAction.getPlainAreaCompleteAreas().forEach(plainAreaCompleteAreas::put);
+            } else if (action instanceof RackPlacementAction) {
+                RackPlacementAction rackAction = (RackPlacementAction) action;
+                sceneObjects.addAll(rackAction.getPlacedRacks());
+                for (Spatial rack : rackAction.getPlacedRacks()) {
+                    rack.getParent().attachChild(rack);
+                }
             }
 
             notifyListeners();
