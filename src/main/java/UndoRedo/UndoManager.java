@@ -83,6 +83,9 @@ public class UndoManager {
         }  else if (action instanceof RackPlacementAction) {
             RackPlacementAction rackAction = (RackPlacementAction) action;
             sceneObjects.addAll(rackAction.getPlacedRacks());
+        } else if (action instanceof PasteAction) {
+            PasteAction pasteAction = (PasteAction) action;
+            sceneObjects.addAll(pasteAction.getPastedObjects());
         }
 
         notifyListeners();
@@ -146,9 +149,9 @@ public class UndoManager {
             } else if (action instanceof RackPlacementAction) {
                 RackPlacementAction rackAction = (RackPlacementAction) action;
                 sceneObjects.removeAll(rackAction.getPlacedRacks());
-                for (Spatial rack : rackAction.getPlacedRacks()) {
-                    rack.removeFromParent();
-                }
+            } else if (action instanceof PasteAction) {
+                PasteAction pasteAction = (PasteAction) action;
+                sceneObjects.removeAll(pasteAction.getPastedObjects());
             }
 
             notifyListeners();
@@ -212,9 +215,9 @@ public class UndoManager {
             } else if (action instanceof RackPlacementAction) {
                 RackPlacementAction rackAction = (RackPlacementAction) action;
                 sceneObjects.addAll(rackAction.getPlacedRacks());
-                for (Spatial rack : rackAction.getPlacedRacks()) {
-                    rack.getParent().attachChild(rack);
-                }
+            } else if (action instanceof PasteAction) {
+                PasteAction pasteAction = (PasteAction) action;
+                sceneObjects.addAll(pasteAction.getPastedObjects());
             }
 
             notifyListeners();

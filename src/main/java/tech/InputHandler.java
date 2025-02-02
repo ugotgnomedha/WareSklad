@@ -9,6 +9,7 @@ import com.jme3.input.controls.*;
 public class InputHandler {
 
     private static boolean moveLeft, moveRight, moveUp, moveDown;
+    private static boolean shiftLeft, shiftRight;
     private CameraController cameraController;
     private UndoManager undoManager;
     private WareSkladInit jmeScene;
@@ -36,6 +37,14 @@ public class InputHandler {
         inputManager.addListener(actionListener, "MouseWheelPressed");
         inputManager.addMapping("MouseWheelReleased", new MouseButtonTrigger(MouseInput.BUTTON_MIDDLE));
         inputManager.addListener(actionListener, "MouseWheelReleased");
+
+        inputManager.addMapping("Copy", new KeyTrigger(KeyInput.KEY_C), new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addMapping("Paste", new KeyTrigger(KeyInput.KEY_V), new KeyTrigger(KeyInput.KEY_LCONTROL));
+        inputManager.addListener(actionListener, "Copy", "Paste");
+
+        inputManager.addMapping("ShiftLeft", new KeyTrigger(KeyInput.KEY_LSHIFT));
+        inputManager.addMapping("ShiftRight", new KeyTrigger(KeyInput.KEY_RSHIFT));
+        inputManager.addListener(analogListener, "ShiftLeft", "ShiftRight");
     }
 
     private ActionListener actionListener = new ActionListener() {
@@ -57,6 +66,14 @@ public class InputHandler {
                 jmeScene.deselectObject();
                 undoManager.redo();
             }
+
+            if (name.equals("Copy") && !isPressed) {
+                jmeScene.copySelectedObjects();
+            }
+
+            if (name.equals("Paste") && !isPressed) {
+                jmeScene.pasteObjects();
+            }
         }
     };
 
@@ -68,6 +85,9 @@ public class InputHandler {
 
         if (name.equals("ZoomIn")) cameraController.zoomIn();
         if (name.equals("ZoomOut")) cameraController.zoomOut();
+
+        if (name.equals("ShiftLeft")) shiftLeft = value > 0;
+        if (name.equals("ShiftRight")) shiftRight = value > 0;
     };
 
     public static boolean isMoveLeft() {
@@ -84,6 +104,14 @@ public class InputHandler {
 
     public static boolean isMoveDown() {
         return moveDown;
+    }
+
+    public static boolean isShiftLeft() {
+        return shiftLeft;
+    }
+
+    public static boolean isShiftRight() {
+        return shiftRight;
     }
 
     public static void resetMovement() {

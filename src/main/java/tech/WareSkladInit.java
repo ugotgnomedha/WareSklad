@@ -1,5 +1,6 @@
 package tech;
 
+import UndoRedo.PasteAction;
 import UndoRedo.PropertyChangeAction;
 import UndoRedo.UndoManager;
 import com.jme3.app.SimpleApplication;
@@ -9,11 +10,11 @@ import com.jme3.font.BitmapText;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
-import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.*;
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.system.AppSettings;
 import com.jme3.system.JmeCanvasContext;
@@ -23,6 +24,7 @@ import ui.PropertiesPanel;
 import ui.UILinesDrawer;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -53,6 +55,9 @@ public class WareSkladInit extends SimpleApplication {
     private UILinesDrawer uiLinesDrawer;
     private GeometrySelectionHandler geometrySelectionHandler;
     public RackPlacementManager rackPlacementManager;
+
+    private ArrayList<Spatial> multiSelectedObjects = new ArrayList<>();
+    private ArrayList<Spatial> copiedObjects = new ArrayList<>();
 
     private boolean is3DMode = false;
     private boolean isMouseWheelPressed = false;
@@ -224,25 +229,36 @@ public class WareSkladInit extends SimpleApplication {
     }
 
     public void selectObject(Spatial object) {
-        deselectObject();
+        if (object == null) {
+            deselectObject();
+            return;
+        }
 
         String layerName = layersManager.getLayerForSpatial(object);
 
         if (!layersManager.isLayerEditLocked(layerName)) {
-            selectedObject = object;
+            if (!InputHandler.isShiftLeft() && !InputHandler.isShiftRight()) {
+                multiSelectedObjects.clear();
+                selectedObject = object;
+            } else {
+                if (multiSelectedObjects.contains(object)) {
+                    multiSelectedObjects.remove(object);
+                } else {
+                    multiSelectedObjects.add(object);
+                    selectedObject = object;
+                }
+            }
 
-            if (object != null) {
-                updateProperties(object);
+            if (selectedObject != null) {
+                updateProperties(selectedObject);
                 if (objectControls != null) {
-                    objectControls.setSelectedObject(object);
+                    objectControls.setSelectedObject(selectedObject);
                     propertiesPanel.setSelectedObject(selectedObject);
                 }
 
-                SelectionHandler handler = selectionHandlers.get(object.getClass());
+                SelectionHandler handler = selectionHandlers.get(selectedObject.getClass());
                 if (handler != null) {
-                    handler.handleSelection(object);
-                } else {
-                    System.out.println("No handler registered for object of type: " + object.getClass().getSimpleName());
+                    handler.handleSelection(selectedObject);
                 }
             }
         } else {
@@ -449,6 +465,37 @@ public class WareSkladInit extends SimpleApplication {
     public Canvas getCanvas() {
         JmeCanvasContext context = (JmeCanvasContext) getContext();
         return context.getCanvas();
+    }
+
+    public void copySelectedObjects() {
+        copiedObjects.clear();
+        if (!multiSelectedObjects.isEmpty()) {
+            copiedObjects.addAll(multiSelectedObjects);
+            multiSelectedObjects.clear();
+        } else if (selectedObject != null) {
+            copiedObjects.add(selectedObject);
+        }
+    }
+
+    public void pasteObjects() {
+        if (copiedObjects.isEmpty()) {
+            return;
+        }
+
+        ArrayList<Spatial> pastedObjects = new ArrayList<>();
+        for (Spatial original : copiedObjects) {
+            Spatial copy = original.clone();
+            copy.setLocalTranslation(original.getLocalTranslation().add(5, 0, 0));
+            pastedObjects.add(copy);
+        }
+
+        Node rootNode = getRootNode();
+        for (Spatial pastedObject : pastedObjects) {
+            rootNode.attachChild(pastedObject);
+        }
+
+        PasteAction pasteAction = new PasteAction(pastedObjects, rootNode);
+        undoManager.addAction(pasteAction);
     }
 
     @Override

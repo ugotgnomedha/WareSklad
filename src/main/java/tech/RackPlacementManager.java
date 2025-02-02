@@ -141,13 +141,13 @@ public class RackPlacementManager {
             }
         }
 
-        RackPlacementAction rackPlacementAction = new RackPlacementAction(placedRacks, sceneObjects);
+        RackPlacementAction rackPlacementAction = new RackPlacementAction(placedRacks);
         undoManager.addAction(rackPlacementAction);
     }
 
     private Spatial visualizeRackPlacement(Vector3f position, float rackWidth, float rackDepth, float rackHeight, boolean rotate) {
         Future<Spatial> rackFuture = jmeScene.enqueue(() -> {
-            Spatial rackModel = jmeScene.getAssetManager().loadModel("Models/RackingSystems/defaultRack_200cm_180cm_110cm.j3o");
+            Spatial rackModel = jmeScene.getAssetManager().loadModel("Models/Racks/Rack200cm180cm110cm.j3o");
 
             float modelWidth = 1.8f;
             float modelHeight = 2.0f;

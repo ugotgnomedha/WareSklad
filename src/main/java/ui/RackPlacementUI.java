@@ -14,17 +14,15 @@ public class RackPlacementUI {
 
     private ResourceBundle bundle;
     private final UndoManager undoManager;
-    private final CatalogueLoader.Catalogue catalogue;
     private RackPlacementManager rackPlacementManager;
 
     public void setRackPlacementManager(RackPlacementManager rackPlacementManager) {
         this.rackPlacementManager = rackPlacementManager;
     }
 
-    public RackPlacementUI(ResourceBundle bundle, UndoManager undoManager, CatalogueLoader.Catalogue catalogue) {
+    public RackPlacementUI(ResourceBundle bundle, UndoManager undoManager) {
         this.bundle = bundle;
         this.undoManager = undoManager;
-        this.catalogue = catalogue;
     }
 
     public void openRacksPlacementFrame() {

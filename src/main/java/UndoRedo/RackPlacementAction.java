@@ -10,12 +10,10 @@ import java.util.Map;
 public class RackPlacementAction implements UndoableAction {
 
     private final List<Spatial> placedRacks;
-    private final List<Spatial> sceneObjects;
     private final Map<Spatial, Node> originalParents;
 
-    public RackPlacementAction(List<Spatial> placedRacks, List<Spatial> sceneObjects) {
+    public RackPlacementAction(List<Spatial> placedRacks) {
         this.placedRacks = placedRacks;
-        this.sceneObjects = sceneObjects;
         this.originalParents = new HashMap<>();
 
         for (Spatial rack : placedRacks) {
@@ -27,7 +25,6 @@ public class RackPlacementAction implements UndoableAction {
 
     @Override
     public void undo() {
-        sceneObjects.removeAll(placedRacks);
         for (Spatial rack : placedRacks) {
             if (rack.getParent() != null) {
                 rack.removeFromParent();
@@ -37,7 +34,6 @@ public class RackPlacementAction implements UndoableAction {
 
     @Override
     public void redo() {
-        sceneObjects.addAll(placedRacks);
         for (Spatial rack : placedRacks) {
             Node originalParent = originalParents.get(rack);
             if (originalParent != null) {

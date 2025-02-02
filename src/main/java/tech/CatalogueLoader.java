@@ -1,18 +1,18 @@
 package tech;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
+import com.google.gson.GsonBuilder;
 
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CatalogueLoader {
 
-    // Folders.
-    public class Folder {
+    public static class Folder {
         private String name;
         private List<CatalogueItem> items;
         private List<Folder> subfolders;
@@ -42,7 +42,6 @@ public class CatalogueLoader {
         }
     }
 
-    // Items.
     public static class CatalogueItem {
         private String name;
         private String itemImage;
@@ -92,8 +91,6 @@ public class CatalogueLoader {
             loadedCatalogue = gson.fromJson(reader, Catalogue.class);
         } catch (IOException e) {
             System.err.println("Error reading file: " + filePath);
-        } catch (JsonSyntaxException e) {
-            System.err.println("Invalid JSON format: " + filePath);
         }
 
         Catalogue defaultCatalogue = getDefaultCatalogue();
@@ -103,6 +100,76 @@ public class CatalogueLoader {
         }
 
         return defaultCatalogue;
+    }
+
+    public static void saveCatalogue(Catalogue catalogue, String filePath) {
+        Catalogue catalogueToSave = new Catalogue();
+        List<Folder> foldersToSave = new ArrayList<>();
+
+        for (Folder folder : catalogue.getFolders()) {
+            if (!folder.getName().equals("Layout tools")) {
+                foldersToSave.add(folder);
+            }
+        }
+
+        catalogueToSave.setFolders(foldersToSave);
+
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        try (FileWriter writer = new FileWriter(filePath)) {
+            gson.toJson(catalogueToSave, writer);
+            System.out.println("Catalogue saved successfully to: " + filePath);
+        } catch (IOException e) {
+            System.err.println("Error saving catalogue to file: " + filePath);
+            e.printStackTrace();
+        }
+    }
+
+    public static Catalogue refreshCatalogue(Catalogue catalogue, String cataloguePath, String modelsDirectory) {
+        File modelsDir = new File(modelsDirectory);
+
+        if (modelsDir.exists() && modelsDir.isDirectory()) {
+            Map<String, Folder> folderMap = catalogue.getFolders().stream()
+                    .collect(Collectors.toMap(f -> normalizeName(f.getName()), f -> f, (existing, replacement) -> existing));
+
+            for (File folder : modelsDir.listFiles(File::isDirectory)) {
+                String normalizedFolderName = normalizeName(folder.getName());
+
+                Folder catFolder = folderMap.get(normalizedFolderName);
+                if (catFolder == null) {
+                    catFolder = new Folder();
+                    catFolder.setName(folder.getName());
+                    catFolder.setItems(new ArrayList<>());
+                    catalogue.getFolders().add(catFolder);
+                    folderMap.put(normalizedFolderName, catFolder);
+                }
+
+                for (File modelFile : folder.listFiles()) {
+                    String modelFileName = modelFile.getName();
+                    String modelPath = "Models/" + folder.getName() + "/" + modelFileName;
+
+                    boolean modelExists = catFolder.getItems().stream()
+                            .anyMatch(item -> item.getModelPath().equals(modelPath));
+
+                    if (!modelExists) {
+                        String normalizedItemName = normalizeName(modelFileName.replace(".j3o", "").replace(".obj", ""));
+                        CatalogueItem newItem = new CatalogueItem();
+                        newItem.setName(normalizedItemName);
+                        newItem.setItemImage("Textures/Images/Items/default.png");
+                        newItem.setModelPath(modelPath);
+
+                        catFolder.getItems().add(newItem);
+                        break;
+                    }
+                }
+            }
+        }
+
+        saveCatalogue(catalogue, cataloguePath);
+        return catalogue;
+    }
+
+    private static String normalizeName(String name) {
+        return name.toLowerCase().replaceAll("\\s+", "");
     }
 
     private Catalogue getDefaultCatalogue() {

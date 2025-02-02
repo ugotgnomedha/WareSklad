@@ -1,7 +1,9 @@
 package ui;
 
 import com.jme3.scene.Geometry;
+import com.jme3.scene.Spatial;
 import com.jme3.system.JmeCanvasContext;
+import saverLoader.OBJExporter;
 import saverLoader.ProjectLoader;
 import saverLoader.ProjectSaver;
 import tech.*;
@@ -11,22 +13,24 @@ import tech.layers.LayersManager;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.ResourceBundle;
 
 public class PlannerUI {
 
     private WareSkladInit jmeScene;
-    private PropertiesPanel propertiesPanel;
-    private LayersManager layersManager = new LayersManager();
-    private GridSettingUI gridSettingUI = new GridSettingUI();
+    private final PropertiesPanel propertiesPanel;
+    private final LayersManager layersManager = new LayersManager();
+    private final GridSettingUI gridSettingUI = new GridSettingUI();
     private ProjectSaver projectSaver;
     private ProjectLoader projectLoader;
     private KPIViewer kpiViewer;
     private TagsUI tagsUI;
-    private SimulationUI simulationUI = new SimulationUI();
-    private ResourceBundle bundle;
+    private final SimulationUI simulationUI = new SimulationUI();
+    private AssetsUI assetsUI;
     private CatalogueLoader.Catalogue catalogue;
+    private final ResourceBundle bundle;
     private RackPlacementUI rackPlacementUI;
 
     public PlannerUI(ResourceBundle bundle){
@@ -52,7 +56,7 @@ public class PlannerUI {
         JPanel assetsPanel = createAssetsPanel();
         JPanel layoutPanel = createLayoutPanel();
 
-        rackPlacementUI = new RackPlacementUI(bundle, jmeScene.undoManager, catalogue);
+        rackPlacementUI = new RackPlacementUI(bundle, jmeScene.undoManager);
         rackPlacementUI.setRackPlacementManager(jmeScene.rackPlacementManager);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
@@ -87,9 +91,36 @@ public class PlannerUI {
             if (userChoice == JFileChooser.APPROVE_OPTION) {
                 File selectedFile = fileChooser.getSelectedFile();
                 String filePath = selectedFile.getAbsolutePath();
-                projectSaver.saveProject(filePath);
-                ProjectsView.CURRENT_PROJECT_PATH = filePath;
 
+                String[] options = { ".json", ".obj" };
+                int formatChoice = JOptionPane.showOptionDialog(
+                        frame,
+                        "Choose file format:",
+                        "Save As",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[0]
+                );
+
+                if (formatChoice == 0) {
+                    // Save as .json
+                    filePath = filePath.endsWith(".json") ? filePath : filePath + ".json";
+                    projectSaver.saveProject(filePath);
+                } else if (formatChoice == 1) {
+                    // Save as .obj
+                    filePath = filePath.endsWith(".obj") ? filePath : filePath + ".obj";
+                    OBJExporter objExporter = new OBJExporter();
+                    try {
+                        java.util.List<Spatial> sceneObjects = jmeScene.undoManager.getCurrentSceneObjects();
+                        objExporter.exportSceneToOBJ(sceneObjects, filePath);
+                    } catch (IOException ex) {
+                        JOptionPane.showMessageDialog(frame, "Error saving .obj file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+                ProjectsView.CURRENT_PROJECT_PATH = filePath;
                 String projectInfo = ProjectsView.CURRENT_PROJECT_NAME + " - " + ProjectsView.CURRENT_PROJECT_PATH;
                 boolean projectExists = false;
                 for (int i = 0; i < ProjectsView.projectListModel.size(); i++) {
@@ -106,6 +137,7 @@ public class PlannerUI {
                 ProjectsView.saveRecentProjects();
             }
         });
+
         JMenuItem closeItem = new JMenuItem(bundle.getString("close"));
         closeItem.addActionListener(e -> {
             shutdownJme();
@@ -119,6 +151,7 @@ public class PlannerUI {
                 projectsFrame.setVisible(true);
             });
         });
+
         projectMenu.add(saveItem);
         projectMenu.add(closeItem);
 
@@ -178,6 +211,12 @@ public class PlannerUI {
             gridSettingUI.showGridDialog(frame);
         });
         settingsMenu.add(gridSetting);
+        JMenuItem importModelSetting = new JMenuItem(bundle.getString("importModel"));
+        importModelSetting.addActionListener(e -> {
+            ImportModelUI importModelUI = new ImportModelUI(assetsUI, jmeScene.getAssetManager(), catalogue, "catalogue_items.json", bundle);
+            importModelUI.setVisible(true);
+        });
+        settingsMenu.add(importModelSetting);
 
         menuBar.add(projectMenu);
         menuBar.add(editMenu);
@@ -276,7 +315,7 @@ public class PlannerUI {
         assetsPanel.setBorder(BorderFactory.createTitledBorder("Assets"));
         assetsPanel.setPreferredSize(new Dimension(300, 150));
 
-        AssetsUI assetsUI = new AssetsUI(jmeScene.modelLoader);
+        this.assetsUI = new AssetsUI(jmeScene.modelLoader);
         assetsPanel = assetsUI.getAssetsPanel();
 
         CatalogueLoader loader = new CatalogueLoader();
