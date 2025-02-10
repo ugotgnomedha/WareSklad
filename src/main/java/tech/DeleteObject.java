@@ -37,7 +37,7 @@ public class DeleteObject {
                             undoManager.getCompleteFloorVertices()
                     ));
                 } else {
-                    undoManager.addAction(new DeleteAction(object, rootNode));
+                    undoManager.addAction(new DeleteAction(jmeScene, object, rootNode));
                 }
                 object.removeFromParent();
             });

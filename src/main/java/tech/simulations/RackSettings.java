@@ -1,4 +1,9 @@
-package tech;
+package tech.simulations;
+
+import tech.simulations.Pallet;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class RackSettings {
 
@@ -8,6 +13,7 @@ public class RackSettings {
     private int shelves;
     private int perShelfCapacity;
     private int totalCapacity;
+    private List<Pallet> storedPallets = new ArrayList<>();
 
     public RackSettings(double height, double width, double depth, int shelves, int perShelfCapacity, int totalCapacity) {
         this.height = height;
@@ -64,6 +70,26 @@ public class RackSettings {
 
     public void setTotalCapacity(int totalCapacity) {
         this.totalCapacity = totalCapacity;
+    }
+
+    public boolean addPallet(Pallet pallet) {
+        if (canFitPallet(pallet)) {
+            storedPallets.add(pallet);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean removePallet(Pallet pallet) {
+        return storedPallets.remove(pallet);
+    }
+
+    public List<Pallet> getStoredPallets() {
+        return storedPallets;
+    }
+
+    public boolean canFitPallet(Pallet pallet) {
+        return storedPallets.size() < totalCapacity && pallet.getWeight() <= perShelfCapacity;
     }
 
     @Override

@@ -3,8 +3,8 @@ package UndoRedo;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
-import tech.Pallet;
-import tech.RackSettings;
+import tech.simulations.Pallet;
+import tech.simulations.RackSettings;
 import tech.Tag;
 import tech.TagManager;
 

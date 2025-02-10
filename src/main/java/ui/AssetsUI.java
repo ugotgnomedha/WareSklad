@@ -9,21 +9,59 @@ import tech.ModelLoader;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 public class AssetsUI {
     private JPanel assetsPanel;
+    private JTextField searchField;
+    private JPanel contentPanel;
     private CatalogueLoader.Catalogue catalogue;
-    private Folder currentFolder;
     private final ModelLoader modelLoader;
+    private final ResourceBundle bundle;
 
-    public AssetsUI(ModelLoader modelLoader) {
+    public AssetsUI(ModelLoader modelLoader, ResourceBundle bundle) {
         this.modelLoader = modelLoader;
+        this.bundle = bundle;
         assetsPanel = new JPanel(new BorderLayout());
-        assetsPanel.setBorder(BorderFactory.createTitledBorder("Assets"));
+        assetsPanel.setBorder(BorderFactory.createTitledBorder(bundle.getString("assets.title")));
+
+        setupSearchBar();
+
+        contentPanel = new JPanel(new BorderLayout());
+        assetsPanel.add(contentPanel, BorderLayout.CENTER);
     }
 
     public JPanel getAssetsPanel() {
         return assetsPanel;
+    }
+
+    private void setupSearchBar() {
+        searchField = new JTextField();
+        searchField.setPreferredSize(new Dimension(200, 25));
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterAssets(searchField.getText().trim());
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterAssets(searchField.getText().trim());
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterAssets(searchField.getText().trim());
+            }
+        });
+
+        JPanel searchPanel = new JPanel(new BorderLayout());
+        searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        searchPanel.add(new JLabel(bundle.getString("search.label")), BorderLayout.WEST);
+        searchPanel.add(searchField, BorderLayout.CENTER);
+
+        assetsPanel.add(searchPanel, BorderLayout.NORTH);
     }
 
     public void loadCatalogue(CatalogueLoader.Catalogue catalogue) {
@@ -32,8 +70,7 @@ public class AssetsUI {
     }
 
     private void displayFolders(List<Folder> folders) {
-        currentFolder = null;
-        assetsPanel.removeAll();
+        contentPanel.removeAll();
 
         JPanel foldersPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
 
@@ -49,48 +86,74 @@ public class AssetsUI {
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-        assetsPanel.add(scrollPane, BorderLayout.CENTER);
-        assetsPanel.revalidate();
-        assetsPanel.repaint();
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void displayFolderContents(Folder folder) {
-        currentFolder = folder;
-        assetsPanel.removeAll();
+        contentPanel.removeAll();
 
-        JPanel contentsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        JPanel contentsPanel = new JPanel();
+        contentsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10));
 
-        JButton goBackButton = createIconButton("Textures/Images/Icons/go_back.png", "Go To Root");
+        JButton goBackButton = createIconButton("Textures/Images/Icons/go_back.png", bundle.getString("goBack"));
         goBackButton.addActionListener(e -> displayFolders(catalogue.getFolders()));
         contentsPanel.add(goBackButton);
 
-        // Subfolders
-        for (Folder subfolder : folder.getSubFolders()) {
-            JButton subfolderButton = createIconButton(
-                    "Textures/Images/Icons/asset_folder.png", subfolder.getName()
-            );
-            subfolderButton.addActionListener(e -> displayFolderContents(subfolder));
-            contentsPanel.add(subfolderButton);
-        }
+        int itemsPerRow = calculateItemsPerRow();
+        int count = 0;
 
-        // Items
         for (CatalogueItem item : folder.getItems()) {
             if (isValidCatalogueItem(item)) {
                 JButton itemButton = createIconButton(item.getItemImage(), item.getName());
                 itemButton.addActionListener(e -> loadItemIntoScene(item));
                 contentsPanel.add(itemButton);
-            } else {
-                System.err.println("Skipping invalid item: " + item.getName());
+                count++;
             }
         }
 
         JScrollPane scrollPane = new JScrollPane(contentsPanel);
-        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-        assetsPanel.add(scrollPane, BorderLayout.CENTER);
-        assetsPanel.revalidate();
-        assetsPanel.repaint();
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
+    }
+
+    private void filterAssets(String query) {
+        contentPanel.removeAll();
+
+        if (query.isEmpty()) {
+            displayFolders(catalogue.getFolders());
+            return;
+        }
+
+        JPanel resultsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+
+        List<CatalogueItem> matchingItems = catalogue.getFolders().stream()
+                .flatMap(folder -> folder.getItems().stream())
+                .filter(item -> item.getName().toLowerCase().contains(query.toLowerCase()))
+                .collect(Collectors.toList());
+
+        if (matchingItems.isEmpty()) {
+            resultsPanel.add(new JLabel(bundle.getString("noMatchingAssets")));
+        } else {
+            for (CatalogueItem item : matchingItems) {
+                JButton itemButton = createIconButton(item.getItemImage(), item.getName());
+                itemButton.addActionListener(e -> loadItemIntoScene(item));
+                resultsPanel.add(itemButton);
+            }
+        }
+
+        JScrollPane scrollPane = new JScrollPane(resultsPanel);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private boolean isValidCatalogueItem(CatalogueItem item) {
@@ -107,7 +170,7 @@ public class AssetsUI {
     }
 
     private JButton createIconButton(String iconPath, String text) {
-        if (getClass().getClassLoader().getResource(iconPath) == null){
+        if (getClass().getClassLoader().getResource(iconPath) == null) {
             return new JButton(text);
         }
         ImageIcon icon = new ImageIcon(getClass().getClassLoader().getResource(iconPath));
@@ -117,12 +180,9 @@ public class AssetsUI {
         }
 
         Image image = icon.getImage();
-
         int width = 50;
         int height = 50;
-
         Image scaledImage = image.getScaledInstance(width, height, Image.SCALE_SMOOTH);
-
         icon = new ImageIcon(scaledImage);
 
         JButton button = new JButton(text);
@@ -135,5 +195,11 @@ public class AssetsUI {
         button.setContentAreaFilled(false);
 
         return button;
+    }
+
+    private int calculateItemsPerRow() {
+        int panelWidth = contentPanel.getWidth();
+        int itemWidth = 110;
+        return Math.max(panelWidth / itemWidth, 1);
     }
 }

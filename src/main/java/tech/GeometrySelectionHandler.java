@@ -4,6 +4,7 @@ import UndoRedo.UndoManager;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import ui.PropertiesPanel;
+import tech.Tag;
 
 public class GeometrySelectionHandler implements SelectionHandler {
     private final UndoManager undoManager;
@@ -29,16 +30,17 @@ public class GeometrySelectionHandler implements SelectionHandler {
             Float plainArea = null;
             boolean rackShelf = false;
 
+            Tag tag = undoManager.getTagMap().get(object);
+            if (tag != null && "Rack".equals(tag.getName())) {
+                rackShelf = true;
+            }
+
             if (undoManager.getFloorSegmentDistances().containsKey(selectedGeometry)) {
                 distance = undoManager.getFloorSegmentDistances().get(selectedGeometry);
             }
 
             if (undoManager.getFloorCompleteAreas().containsKey(selectedGeometry)) {
                 floorArea = undoManager.getFloorCompleteAreas().get(selectedGeometry);
-            }
-
-            if (modelLoader.getModelPath(object) != null && modelLoader.getModelPath(object).contains("/RackingSystems/")) {
-                rackShelf = true;
             }
 
             if (undoManager.getPlainAreaCompleteAreas().containsKey(selectedGeometry)) {
@@ -64,5 +66,4 @@ public class GeometrySelectionHandler implements SelectionHandler {
             }
         }
     }
-
 }

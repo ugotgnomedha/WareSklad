@@ -16,6 +16,7 @@ import com.jme3.scene.Spatial;
 import tech.*;
 import tech.layers.Layer;
 import tech.layers.LayersManager;
+import tech.simulations.RackSettings;
 
 public class PropertiesPanel extends JPanel {
 

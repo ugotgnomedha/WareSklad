@@ -1,4 +1,3 @@
-import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import ui.ProjectsView;
 
@@ -10,7 +9,7 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            UIManager.setLookAndFeel(new FlatMacDarkLaf());
+            UIManager.setLookAndFeel(new FlatMacLightLaf());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -28,6 +27,7 @@ public class Main {
             frame.setSize(600, 400);
             frame.setLocationRelativeTo(null);
             frame.setContentPane(projectsPanel);
+            projectsView.addMenuBar(frame);
             frame.setVisible(true);
         });
     }

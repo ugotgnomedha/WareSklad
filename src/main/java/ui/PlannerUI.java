@@ -1,5 +1,6 @@
 package ui;
 
+import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import com.jme3.system.JmeCanvasContext;
@@ -149,6 +150,7 @@ public class PlannerUI {
                 projectsFrame.setSize(600, 400);
                 projectsFrame.add(projectsView.createProjectsPanel());
                 projectsFrame.setVisible(true);
+                projectsView.addMenuBar(projectsFrame);
             });
         });
 
@@ -217,6 +219,16 @@ public class PlannerUI {
             importModelUI.setVisible(true);
         });
         settingsMenu.add(importModelSetting);
+        JMenuItem sceneDarkMode = new JMenuItem(bundle.getString("sceneDarkMode"));
+        sceneDarkMode.addActionListener(e -> {
+            jmeScene.changeSceneBackgroundColor(ColorRGBA.DarkGray);
+        });
+        settingsMenu.add(sceneDarkMode);
+        JMenuItem sceneLightMode = new JMenuItem(bundle.getString("sceneLightMode"));
+        sceneLightMode.addActionListener(e -> {
+            jmeScene.changeSceneBackgroundColor(ColorRGBA.Gray);
+        });
+        settingsMenu.add(sceneLightMode);
 
         menuBar.add(projectMenu);
         menuBar.add(editMenu);
@@ -315,7 +327,7 @@ public class PlannerUI {
         assetsPanel.setBorder(BorderFactory.createTitledBorder("Assets"));
         assetsPanel.setPreferredSize(new Dimension(300, 150));
 
-        this.assetsUI = new AssetsUI(jmeScene.modelLoader);
+        this.assetsUI = new AssetsUI(jmeScene.modelLoader, bundle);
         assetsPanel = assetsUI.getAssetsPanel();
 
         CatalogueLoader loader = new CatalogueLoader();

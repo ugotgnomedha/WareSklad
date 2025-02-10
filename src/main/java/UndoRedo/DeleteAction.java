@@ -2,12 +2,15 @@ package UndoRedo;
 
 import com.jme3.scene.Spatial;
 import com.jme3.scene.Node;
+import tech.WareSkladInit;
 
 public class DeleteAction implements UndoableAction {
+    private final WareSkladInit jmeScene;
     private final Spatial deletedObject;
     private final Node rootNode;
 
-    public DeleteAction(Spatial deletedObject, Node rootNode) {
+    public DeleteAction(WareSkladInit jmeScene, Spatial deletedObject, Node rootNode) {
+        this.jmeScene = jmeScene;
         this.deletedObject = deletedObject;
         this.rootNode = rootNode;
     }
@@ -18,11 +21,15 @@ public class DeleteAction implements UndoableAction {
 
     @Override
     public void undo() {
-        rootNode.attachChild(deletedObject);
+        jmeScene.enqueue(() -> {
+            rootNode.attachChild(deletedObject);
+        });
     }
 
     @Override
     public void redo() {
-        deletedObject.removeFromParent();
+        jmeScene.enqueue(() -> {
+            deletedObject.removeFromParent();
+        });
     }
 }

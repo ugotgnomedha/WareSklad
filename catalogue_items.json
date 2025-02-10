@@ -64,11 +64,6 @@
           "modelPath": "Models/Misc/gas_can01.j3o"
         },
         {
-          "name": "Gas Canister01",
-          "itemImage": "Textures/Images/Items/Misc/trolley01.png",
-          "modelPath": "Models/Misc/trolley01.j3o"
-        },
-        {
           "name": "ForkLift Truck",
           "itemImage": "Textures/Images/Items/Misc/forkLiftTruck.png",
           "modelPath": "Models/Misc/forkLiftTruck.j3o"

@@ -1,4 +1,4 @@
-package tech;
+package tech.simulations;
 
 public class Pallet {
     private String id;

@@ -1,4 +1,4 @@
-package tech;
+package tech.simulations;
 
 import UndoRedo.UndoManager;
 import com.jme3.asset.AssetManager;
@@ -10,6 +10,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Line;
+import tech.WareSkladInit;
 import ui.Grid;
 
 import java.util.*;
@@ -28,7 +29,7 @@ public class AStarPathFind {
         this.rootNode = jmeScene.getRootNode();
         this.assetManager = jmeScene.getAssetManager();
         this.jmeScene = jmeScene;
-        this.avoidanceDistance = avoidanceDistance;
+        this.avoidanceDistance = avoidanceDistance * Grid.GRID_SPACING;
     }
 
     private static class PathNode {
@@ -144,7 +145,10 @@ public class AStarPathFind {
         PathNode[][] grid = new PathNode[gridLength][gridWidth];
         for (int x = 0; x < gridLength; x++) {
             for (int z = 0; z < gridWidth; z++) {
-                grid[x][z] = new PathNode(x, z);
+                Vector3f position = new Vector3f(x * gridSpacing - originX, Grid.GRID_Y_LEVEL, z * gridSpacing - originZ);
+                if (isPointInsideAnyFloor(position)) {
+                    grid[x][z] = new PathNode(x, z);
+                }
             }
         }
 
@@ -153,6 +157,10 @@ public class AStarPathFind {
 
         PathNode startNode = grid[startX][startZ];
         PathNode endNode = grid[endX][endZ];
+
+        if (startNode == null || endNode == null) {
+            return new ArrayList<>();
+        }
 
         PriorityQueue<PathNode> openSet = new PriorityQueue<>(Comparator.comparingInt(n -> n.fCost));
         Set<PathNode> closedSet = new HashSet<>();
@@ -185,6 +193,65 @@ public class AStarPathFind {
         }
 
         return new ArrayList<>();
+    }
+
+    private boolean isPointInsideAnyFloor(Vector3f point) {
+        Map<Geometry, Float> floorCompleteAreas = jmeScene.undoManager.getFloorCompleteAreas();
+        Map<Integer, Vector3f> completeFloorCenters = jmeScene.undoManager.getCompleteFloorCenters();
+
+        for (Geometry floorGeometry : floorCompleteAreas.keySet()) {
+            List<Vector3f> floorVertices = jmeScene.undoManager.getCompleteFloorVertices().get(floorGeometry);
+            int floorId = jmeScene.undoManager.getFloorSegmentToFloorId().get(floorGeometry);
+            Vector3f floorCenter = completeFloorCenters.get(floorId);
+
+            if (floorVertices != null && floorCenter != null) {
+                Vector3f localPoint = point.subtract(floorCenter);
+
+                if (isPointInsidePolygon(localPoint, floorVertices)) {
+                    if (isPointNearFloorEdge(localPoint, floorVertices)) {
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isPointNearFloorEdge(Vector3f point, List<Vector3f> floorVertices) {
+        for (Vector3f vertex : floorVertices) {
+            float distance = point.distance(vertex);
+            if (distance < avoidanceDistance) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isPointInsidePolygon(Vector3f point, List<Vector3f> polygon) {
+        if (polygon == null || polygon.size() < 3) {
+            return false;
+        }
+
+        boolean inside = false;
+        int n = polygon.size();
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            Vector3f vi = polygon.get(i);
+            Vector3f vj = polygon.get(j);
+
+            if (point.x == vi.x && point.z == vi.z) {
+                return true;
+            }
+
+            if ((vi.z > point.z) != (vj.z > point.z)) {
+                double intersect = (vj.x - vi.x) * (point.z - vi.z) / (vj.z - vi.z) + vi.x;
+
+                if (point.x <= intersect) {
+                    inside = !inside;
+                }
+            }
+        }
+        return inside;
     }
 
     private List<PathNode> getNeighbors(PathNode node, PathNode[][] grid, int gridLength, int gridWidth) {

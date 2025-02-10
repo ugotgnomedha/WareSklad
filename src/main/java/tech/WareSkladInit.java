@@ -134,6 +134,10 @@ public class WareSkladInit extends SimpleApplication {
         initLatch.countDown();
     }
 
+    public void changeSceneBackgroundColor(ColorRGBA color) {
+        viewPort.setBackgroundColor(color);
+    }
+
     public void setTwoDView() {
         if (is3DMode) {
             is3DMode = false;

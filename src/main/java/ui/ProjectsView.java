@@ -1,12 +1,12 @@
 package ui;
 
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -46,29 +46,14 @@ public class ProjectsView {
         buttonsPanel.setLayout(new FlowLayout());
 
         JButton createNewButton = new JButton(bundle.getString("createNewProject"));
-        createNewButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                createNewProject();
-            }
-        });
+        createNewButton.addActionListener(e -> createNewProject());
 
         JButton openSelectedButton = new JButton(bundle.getString("openSelected"));
         openSelectedButton.setEnabled(false);
-        openSelectedButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                openSelectedProject();
-            }
-        });
+        openSelectedButton.addActionListener(e -> openSelectedProject());
 
         JButton findProjectButton = new JButton(bundle.getString("findProject"));
-        findProjectButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                findProjectFile();
-            }
-        });
+        findProjectButton.addActionListener(e -> findProjectFile());
 
         projectList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -77,12 +62,7 @@ public class ProjectsView {
         });
 
         JButton deleteButton = new JButton(bundle.getString("deleteProject"));
-        deleteButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                deleteSelectedProject();
-            }
-        });
+        deleteButton.addActionListener(e -> deleteSelectedProject());
 
         buttonsPanel.add(createNewButton);
         buttonsPanel.add(openSelectedButton);
@@ -94,6 +74,41 @@ public class ProjectsView {
         loadRecentProjects();
 
         return panel;
+    }
+
+    public void addMenuBar(JFrame parentFrame) {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu viewMenu = new JMenu(bundle.getString("view"));
+        menuBar.add(viewMenu);
+
+        JMenuItem lightThemeItem = new JMenuItem(bundle.getString("lightTheme"));
+        JMenuItem darkThemeItem = new JMenuItem(bundle.getString("darkTheme"));
+
+        lightThemeItem.addActionListener(e -> switchToLightTheme());
+        darkThemeItem.addActionListener(e -> switchToDarkTheme());
+
+        viewMenu.add(lightThemeItem);
+        viewMenu.add(darkThemeItem);
+
+        parentFrame.setJMenuBar(menuBar);
+    }
+
+    private void switchToLightTheme() {
+        try {
+            UIManager.setLookAndFeel(new FlatMacLightLaf());
+            SwingUtilities.updateComponentTreeUI((JFrame) SwingUtilities.getWindowAncestor(projectList));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void switchToDarkTheme() {
+        try {
+            UIManager.setLookAndFeel(new FlatMacDarkLaf());
+            SwingUtilities.updateComponentTreeUI((JFrame) SwingUtilities.getWindowAncestor(projectList));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void loadRecentProjects() {
@@ -127,7 +142,6 @@ public class ProjectsView {
                 if (projectFile.exists()) {
                     JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(projectList);
                     parentFrame.dispose();
-
                     openSavePlannerUI();
                 } else {
                     JOptionPane.showMessageDialog(null, bundle.getString("invalidProjectFile"));
@@ -150,7 +164,6 @@ public class ProjectsView {
             if (selectedFile.exists() && selectedFile.getName().endsWith(".json")) {
                 JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(projectList);
                 parentFrame.dispose();
-
                 CURRENT_PROJECT_PATH = selectedFile.getAbsolutePath();
                 PlannerUI plannerUI = new PlannerUI(bundle);
                 JFrame frame = plannerUI.createMainFrame();
@@ -194,10 +207,8 @@ public class ProjectsView {
 
     private void createNewProject() {
         CURRENT_PROJECT_NAME = JOptionPane.showInputDialog(null, bundle.getString("enterProjectName"));
-
         JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(projectList);
         parentFrame.dispose();
-
         openPlannerUI();
     }
 

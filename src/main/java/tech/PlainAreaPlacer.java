@@ -127,7 +127,7 @@ public class PlainAreaPlacer {
             float width = Math.abs(corner2.z - corner1.z) / Grid.GRID_SPACING;
             float area = length * width;
 
-            Box plainAreaBox = new Box(corner2.x/2 - corner1.x/2, 0.01f, corner2.z/2 - corner1.z/2);
+            Box plainAreaBox = new Box(corner2.x/2 - corner1.x/2, 0.05f, corner2.z/2 - corner1.z/2);
             Geometry plainAreaGeometry = new Geometry("PlainArea", plainAreaBox);
 
             Material material = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
