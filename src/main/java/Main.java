@@ -1,4 +1,5 @@
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
+import mdlaf.MaterialLookAndFeel;
 import ui.ProjectsView;
 
 import javax.swing.*;
@@ -9,7 +10,10 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            UIManager.setLookAndFeel(new FlatMacLightLaf());
+            JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+            ToolTipManager.sharedInstance().setLightWeightPopupEnabled(false);
+            UIManager.setLookAndFeel(new MaterialLookAndFeel(new mdlaf.themes.MaterialLiteTheme()));
+
         } catch (Exception e) {
             e.printStackTrace();
         }

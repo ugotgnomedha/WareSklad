@@ -1,0 +1,109 @@
+[
+  {
+    "section": "General",
+    "modifiable": false,
+    "parameters": [
+      {
+        "name": "Load Time",
+        "type": "number",
+        "unit": "seconds",
+        "defaultValue": 25.0
+      },
+      {
+        "name": "Unload Time",
+        "type": "number",
+        "unit": "seconds",
+        "defaultValue": 25.0
+      },
+      {
+        "name": "Action",
+        "type": "string",
+        "unit": "",
+        "defaultValue": "Default action"
+      },
+      {
+        "name": "Action time",
+        "type": "number",
+        "unit": "seconds",
+        "defaultValue": 30.0
+      },
+      {
+        "name": "Capacity",
+        "type": "number",
+        "unit": "kg",
+        "defaultValue": 100.0
+      }
+    ]
+  },
+  {
+    "section": "Rack",
+    "modifiable": false,
+    "parameters": [
+      {
+        "name": "Rack Height",
+        "type": "number",
+        "unit": "meters",
+        "defaultValue": 0.0
+      },
+      {
+        "name": "Rack Width",
+        "type": "number",
+        "unit": "meters",
+        "defaultValue": 0.0
+      },
+      {
+        "name": "Rack Depth",
+        "type": "number",
+        "unit": "meters",
+        "defaultValue": 0.0
+      },
+      {
+        "name": "Rack Shelves",
+        "type": "number",
+        "unit": "count",
+        "defaultValue": 2.0
+      },
+      {
+        "name": "Rack Per Shelf Capacity",
+        "type": "number",
+        "unit": "kg",
+        "defaultValue": 0.0
+      },
+      {
+        "name": "Rack Total Capacity",
+        "type": "number",
+        "unit": "kg",
+        "defaultValue": 0.0
+      },
+      {
+        "name": "Simulation Rack",
+        "type": "boolean",
+        "unit": "",
+        "defaultValue": true
+      }
+    ]
+  },
+  {
+    "section": "Advanced",
+    "modifiable": false,
+    "parameters": [
+      {
+        "name": "Temperature Control",
+        "type": "boolean",
+        "unit": "",
+        "defaultValue": false
+      },
+      {
+        "name": "Hazardous Material Allowed",
+        "type": "boolean",
+        "unit": "",
+        "defaultValue": false
+      }
+    ]
+  },
+  {
+    "section": "User Custom",
+    "modifiable": true,
+    "parameters": []
+  }
+]

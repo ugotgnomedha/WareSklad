@@ -12,12 +12,15 @@ import com.jme3.scene.shape.Box;
 import com.jme3.util.BufferUtils;
 import tech.FloorPlacer;
 import tech.WareSkladInit;
+import tech.parameters.Parameter;
+import tech.parameters.ParameterType;
 import ui.Grid;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ProjectLoader {
 
@@ -53,6 +56,9 @@ public class ProjectLoader {
                         spatial.updateModelBound();
                         spatial.updateGeometricState();
                         loadedObjects.add(spatial);
+
+                        // Load parameters for the spatial
+                        loadParametersForSpatial(spatial, objectJson);
                     }
                 }
 
@@ -120,6 +126,24 @@ public class ProjectLoader {
         spatial.setLocalScale(scale);
 
         return spatial;
+    }
+
+    private void loadParametersForSpatial(Spatial spatial, JsonObject objectJson) {
+        if (objectJson.has("parameters")) {
+            JsonArray parametersArray = objectJson.getAsJsonArray("parameters");
+            Map<Parameter, String> parametersMap = undoManager.getOrCreateParametersForSpatial(spatial);
+
+            for (JsonElement element : parametersArray) {
+                JsonObject parameterJson = element.getAsJsonObject();
+                String name = parameterJson.get("name").getAsString();
+                ParameterType type = ParameterType.valueOf(parameterJson.get("type").getAsString().toUpperCase());
+                String unit = parameterJson.get("unit").getAsString();
+                String value = parameterJson.get("value").getAsString();
+
+                Parameter parameter = new Parameter(name, type, unit, value);
+                parametersMap.put(parameter, value);
+            }
+        }
     }
 
     private Geometry createFloorSegment(JsonObject objectJson) {

@@ -1,4 +1,4 @@
-package tech;
+package tech.tags;
 
 import java.awt.Color;
 

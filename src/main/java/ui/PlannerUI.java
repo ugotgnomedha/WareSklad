@@ -10,6 +10,7 @@ import saverLoader.ProjectSaver;
 import tech.*;
 import tech.KPIs.KPIViewer;
 import tech.layers.LayersManager;
+import tech.parameters.ParameterManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,7 +20,7 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 public class PlannerUI {
-
+    private final String catalogueItemsPath;
     private WareSkladInit jmeScene;
     private final PropertiesPanel propertiesPanel;
     private final LayersManager layersManager = new LayersManager();
@@ -33,10 +34,13 @@ public class PlannerUI {
     private CatalogueLoader.Catalogue catalogue;
     private final ResourceBundle bundle;
     private RackPlacementUI rackPlacementUI;
+    private ParameterManager parameterManager;
 
-    public PlannerUI(ResourceBundle bundle){
+    public PlannerUI(ResourceBundle bundle, String parameterFilePath, String catalogueItemsPath) {
         this.bundle = bundle;
-        propertiesPanel = new PropertiesPanel(bundle);
+        this.catalogueItemsPath = catalogueItemsPath;
+        this.parameterManager = ParameterManager.getInstance(parameterFilePath);
+        propertiesPanel = new PropertiesPanel(bundle, this.parameterManager);
     }
 
     public JFrame createMainFrame() {
@@ -93,7 +97,7 @@ public class PlannerUI {
                 File selectedFile = fileChooser.getSelectedFile();
                 String filePath = selectedFile.getAbsolutePath();
 
-                String[] options = { ".json", ".obj" };
+                String[] options = {".json", ".obj"};
                 int formatChoice = JOptionPane.showOptionDialog(
                         frame,
                         "Choose file format:",
@@ -331,7 +335,7 @@ public class PlannerUI {
         assetsPanel = assetsUI.getAssetsPanel();
 
         CatalogueLoader loader = new CatalogueLoader();
-        catalogue = loader.loadCatalogue("catalogue_items.json");
+        catalogue = loader.loadCatalogue(catalogueItemsPath);
         assetsUI.loadCatalogue(catalogue);
 
         return assetsPanel;

@@ -1,4 +1,4 @@
-package tech.simulations;
+package tech.tags;
 
 import tech.simulations.Pallet;
 

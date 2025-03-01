@@ -10,10 +10,15 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import tech.FloorPlacer;
 import tech.ModelLoader;
+import tech.tags.RackSettings;
+import tech.tags.Tag;
+import ui.TagsUI;
+import tech.parameters.Parameter;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public class ProjectSaver {
     private final UndoManager undoManager;
@@ -65,6 +70,8 @@ public class ProjectSaver {
             objectJson.add("rotation", rotationJson);
             objectJson.add("scale", scaleJson);
 
+            saveParameters(object, objectJson);
+
             if (object instanceof Geometry && object.getName().contains("FloorSegment")) {
                 saveFloorSegmentData((Geometry) object, objectJson);
             } else if (object instanceof Geometry && object.getName().equals("CompleteFloor")) {
@@ -77,7 +84,37 @@ public class ProjectSaver {
         JsonObject rootJson = new JsonObject();
         rootJson.add("scene", sceneArray);
 
-        writeToFile(filePath + ".json", rootJson);
+        writeToFile(filePath, rootJson);
+    }
+
+    private void saveParameters(Spatial object, JsonObject objectJson) {
+        Map<Parameter, String> parameters = undoManager.getParametersForSpatial(object);
+
+        if (parameters != null && !parameters.isEmpty()) {
+            JsonArray parametersArray = new JsonArray();
+
+            for (Map.Entry<Parameter, String> entry : parameters.entrySet()) {
+                Parameter parameter = entry.getKey();
+                String userValue = entry.getValue();
+
+                JsonObject parameterJson = new JsonObject();
+                parameterJson.addProperty("name", parameter.getName());
+                parameterJson.addProperty("type", parameter.getType().toString());
+                parameterJson.addProperty("unit", parameter.getUnit());
+                parameterJson.addProperty("value", userValue);
+
+                parametersArray.add(parameterJson);
+            }
+
+            objectJson.add("parameters", parametersArray);
+        }
+    }
+
+    private void addPropertyWithUnit(JsonObject jsonObject, String propertyName, double value, String unit) {
+        JsonObject valueWithUnit = new JsonObject();
+        valueWithUnit.addProperty("value", value);
+        valueWithUnit.addProperty("unit", unit);
+        jsonObject.add(propertyName, valueWithUnit);
     }
 
     private void saveFloorSegmentData(Geometry segment, JsonObject objectJson) {

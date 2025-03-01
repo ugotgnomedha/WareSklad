@@ -7,6 +7,8 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import tech.WareSkladInit;
+import tech.parameters.Parameter;
+import tech.tags.RackSettings;
 import ui.Grid;
 
 import java.util.*;
@@ -30,25 +32,32 @@ public class SimulationManager {
     public void startReceivingSimulation(Geometry selectedArea, List<Pallet> selectedPallets, Forklift forklift) {
         System.out.println("Avoidance: " + avoidanceDistance);
 
-        Map<Spatial, RackSettings> rackSettingsMap = undoManager.getRackSettingsMap();
+        Map<Spatial, Map<Parameter, String>> objectsParameters = undoManager.getObjectsParameters();
         List<PalletTask> palletQueue = new ArrayList<>();
 
         for (Pallet pallet : selectedPallets) {
             boolean assigned = false;
-            for (Map.Entry<Spatial, RackSettings> entry : rackSettingsMap.entrySet()) {
+            for (Map.Entry<Spatial, Map<Parameter, String>> entry : objectsParameters.entrySet()) {
                 Spatial rack = entry.getKey();
-                RackSettings settings = entry.getValue();
+                Map<Parameter, String> parameters = entry.getValue();
 
-                if (canFitPalletInRack(pallet, settings)) {
-                    List<Vector3f> pathToRack = pathFinder.findPath(selectedArea, (Geometry) rack);
-                    if (pathToRack.isEmpty()) continue;
+                if (isSimulationRack(parameters)) {
+                    RackSettings settings = extractRackSettings(parameters);
 
-                    List<Vector3f> pathBack = new ArrayList<>(pathToRack);
-                    Collections.reverse(pathBack);
+                    if (canFitPalletInRack(pallet, settings)) {
+                        List<Vector3f> pathToRack = pathFinder.findPath(selectedArea, (Geometry) rack);
+                        if (pathToRack.isEmpty()) {
+                            System.out.println("No valid path found to rack: " + rack.getName());
+                            continue;
+                        }
 
-                    palletQueue.add(new PalletTask(pallet, pathToRack, pathBack));
-                    assigned = true;
-                    break;
+                        List<Vector3f> pathBack = new ArrayList<>(pathToRack);
+                        Collections.reverse(pathBack);
+
+                        palletQueue.add(new PalletTask(pallet, pathToRack, pathBack));
+                        assigned = true;
+                        break;
+                    }
                 }
             }
             if (!assigned) {
@@ -59,6 +68,85 @@ public class SimulationManager {
         if (!palletQueue.isEmpty()) {
             processPalletQueue(palletQueue, forklift, selectedArea);
         }
+    }
+
+    private boolean isSimulationRack(Map<Parameter, String> parameters) {
+        Parameter simulationRackParam = findParameterByName(parameters, "Simulation Rack");
+        if (simulationRackParam == null) {
+            System.out.println("Rack is not a simulation rack: Missing 'Simulation Rack' parameter.");
+            return false;
+        }
+        if (!Boolean.parseBoolean(parameters.get(simulationRackParam))) {
+            System.out.println("Rack is not a simulation rack: 'Simulation Rack' parameter is set to false.");
+            return false;
+        }
+
+        Parameter heightParam = findParameterByName(parameters, "Rack Height");
+        Parameter widthParam = findParameterByName(parameters, "Rack Width");
+        Parameter depthParam = findParameterByName(parameters, "Rack Depth");
+
+        if (heightParam == null) {
+            System.out.println("Rack is missing required parameter: 'Rack Height'.");
+            return false;
+        }
+        if (widthParam == null) {
+            System.out.println("Rack is missing required parameter: 'Rack Width'.");
+            return false;
+        }
+        if (depthParam == null) {
+            System.out.println("Rack is missing required parameter: 'Rack Depth'.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private RackSettings extractRackSettings(Map<Parameter, String> parameters) {
+        Parameter heightParam = findParameterByName(parameters, "Rack Height");
+        Parameter widthParam = findParameterByName(parameters, "Rack Width");
+        Parameter depthParam = findParameterByName(parameters, "Rack Depth");
+        Parameter shelvesParam = findParameterByName(parameters, "Rack Shelves");
+        Parameter perShelfCapacityParam = findParameterByName(parameters, "Rack Per Shelf Capacity");
+        Parameter totalCapacityParam = findParameterByName(parameters, "Rack Total Capacity");
+
+        double height = Double.parseDouble(parameters.get(heightParam));
+        double width = Double.parseDouble(parameters.get(widthParam));
+        double depth = Double.parseDouble(parameters.get(depthParam));
+
+        int shelves = (int) Math.round(Double.parseDouble(parameters.get(shelvesParam)));
+        int perShelfCapacity = (int) Math.round(Double.parseDouble(parameters.get(perShelfCapacityParam)));
+        int totalCapacity = (int) Math.round(Double.parseDouble(parameters.get(totalCapacityParam)));
+
+        return new RackSettings(height, width, depth, shelves, perShelfCapacity, totalCapacity);
+    }
+
+    private Parameter findParameterByName(Map<Parameter, String> parameters, String name) {
+        for (Parameter param : parameters.keySet()) {
+            if (param.getName().equalsIgnoreCase(name)) {
+                return param;
+            }
+        }
+        return null;
+    }
+
+    private boolean canFitPalletInRack(Pallet pallet, RackSettings rackSettings) {
+        if (pallet.getHeight() > rackSettings.getHeight()) {
+            System.out.println("Rack cannot fit pallet: Pallet height (" + pallet.getHeight() + ") exceeds rack height (" + rackSettings.getHeight() + ").");
+            return false;
+        }
+        if (pallet.getWidth() > rackSettings.getWidth()) {
+            System.out.println("Rack cannot fit pallet: Pallet width (" + pallet.getWidth() + ") exceeds rack width (" + rackSettings.getWidth() + ").");
+            return false;
+        }
+        if (pallet.getDepth() > rackSettings.getDepth()) {
+            System.out.println("Rack cannot fit pallet: Pallet depth (" + pallet.getDepth() + ") exceeds rack depth (" + rackSettings.getDepth() + ").");
+            return false;
+        }
+        if (pallet.getWeight() > rackSettings.getPerShelfCapacity()) {
+            System.out.println("Rack cannot fit pallet: Pallet weight (" + pallet.getWeight() + ") exceeds rack per-shelf capacity (" + rackSettings.getPerShelfCapacity() + ").");
+            return false;
+        }
+        return true;
     }
 
     private void processPalletQueue(List<PalletTask> palletQueue, Forklift forklift, Geometry startArea) {
@@ -94,13 +182,6 @@ public class SimulationManager {
                 }
             }).start();
         });
-    }
-
-    private boolean canFitPalletInRack(Pallet pallet, RackSettings rackSettings) {
-        return pallet.getHeight() <= rackSettings.getHeight()
-                && pallet.getWidth() <= rackSettings.getWidth()
-                && pallet.getDepth() <= rackSettings.getDepth()
-                && pallet.getWeight() <= rackSettings.getPerShelfCapacity();
     }
 
     private void animateModelAlongPath(Spatial model, List<Vector3f> path, double forkliftSpeed) {

@@ -4,7 +4,7 @@ import UndoRedo.UndoManager;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
 import ui.PropertiesPanel;
-import tech.Tag;
+import tech.tags.Tag;
 
 public class GeometrySelectionHandler implements SelectionHandler {
     private final UndoManager undoManager;
@@ -28,12 +28,6 @@ public class GeometrySelectionHandler implements SelectionHandler {
             Float distance = null;
             Float floorArea = null;
             Float plainArea = null;
-            boolean rackShelf = false;
-
-            Tag tag = undoManager.getTagMap().get(object);
-            if (tag != null && "Rack".equals(tag.getName())) {
-                rackShelf = true;
-            }
 
             if (undoManager.getFloorSegmentDistances().containsKey(selectedGeometry)) {
                 distance = undoManager.getFloorSegmentDistances().get(selectedGeometry);
@@ -52,8 +46,6 @@ public class GeometrySelectionHandler implements SelectionHandler {
                     propertiesPanel.updateDynamicSectionToFloorSegmentProperties(distance);
                 } else if (floorArea != null) {
                     propertiesPanel.updateDynamicSectionToCompleteFloorProperties(floorArea);
-                } else if (rackShelf) {
-                    propertiesPanel.updateDynamicSectionToRackShelf();
                 } else if (plainArea != null) {
                     propertiesPanel.updateDynamicSectionToPlainAreaProperties(plainArea);
                 } else {

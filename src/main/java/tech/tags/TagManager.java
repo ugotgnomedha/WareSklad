@@ -1,11 +1,10 @@
-package tech;
+package tech.tags;
 
 
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
-import tech.Tag;
 
 import java.awt.Color;
 import java.util.HashMap;

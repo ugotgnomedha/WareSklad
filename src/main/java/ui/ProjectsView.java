@@ -15,7 +15,9 @@ import java.util.ResourceBundle;
 
 public class ProjectsView {
 
+    private final String CATALOGUE_ITEMS_FILE = "catalogue_items.json";
     private static final String RECENT_PROJECTS_FILE = "recent_projects.json";
+    private final String PARAMETERS_FILE = "parameters.json";
     public static DefaultListModel<String> projectListModel;
     private JList<String> projectList;
     private static Gson gson;
@@ -116,7 +118,8 @@ public class ProjectsView {
             File file = new File(RECENT_PROJECTS_FILE);
             if (file.exists()) {
                 FileReader fileReader = new FileReader(file);
-                Type projectListType = new TypeToken<List<String>>(){}.getType();
+                Type projectListType = new TypeToken<List<String>>() {
+                }.getType();
                 List<String> recentProjects = gson.fromJson(fileReader, projectListType);
                 fileReader.close();
 
@@ -165,7 +168,7 @@ public class ProjectsView {
                 JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(projectList);
                 parentFrame.dispose();
                 CURRENT_PROJECT_PATH = selectedFile.getAbsolutePath();
-                PlannerUI plannerUI = new PlannerUI(bundle);
+                PlannerUI plannerUI = new PlannerUI(bundle, PARAMETERS_FILE, CATALOGUE_ITEMS_FILE);
                 JFrame frame = plannerUI.createMainFrame();
                 plannerUI.initializeUI(frame);
                 frame.setVisible(true);
@@ -213,14 +216,14 @@ public class ProjectsView {
     }
 
     private void openPlannerUI() {
-        PlannerUI plannerUI = new PlannerUI(bundle);
+        PlannerUI plannerUI = new PlannerUI(bundle, PARAMETERS_FILE, CATALOGUE_ITEMS_FILE);
         JFrame frame = plannerUI.createMainFrame();
         plannerUI.initializeUI(frame);
         frame.setVisible(true);
     }
 
     private void openSavePlannerUI() {
-        PlannerUI plannerUI = new PlannerUI(bundle);
+        PlannerUI plannerUI = new PlannerUI(bundle, PARAMETERS_FILE, CATALOGUE_ITEMS_FILE);
         JFrame frame = plannerUI.createMainFrame();
         plannerUI.initializeUI(frame);
         frame.setVisible(true);

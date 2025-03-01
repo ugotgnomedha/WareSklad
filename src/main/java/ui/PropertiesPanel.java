@@ -1,8 +1,10 @@
 package ui;
 
 import javax.swing.*;
+import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.awt.event.*;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
@@ -16,7 +18,10 @@ import com.jme3.scene.Spatial;
 import tech.*;
 import tech.layers.Layer;
 import tech.layers.LayersManager;
-import tech.simulations.RackSettings;
+import tech.parameters.Parameter;
+import tech.parameters.ParameterManager;
+import tech.parameters.ParameterType;
+import tech.tags.Tag;
 
 public class PropertiesPanel extends JPanel {
 
@@ -27,6 +32,10 @@ public class PropertiesPanel extends JPanel {
     private JPanel transformContent;
 
     private JButton deleteButton;
+
+    private JButton parametersButton;
+    private JPanel parametersContent;
+    private ParameterManager parametersManager;
 
     private JComboBox<String> tagDropdown;
 
@@ -84,10 +93,13 @@ public class PropertiesPanel extends JPanel {
 
         deleteButton.setEnabled(selectedObject != null);
         updateTagDropdown(undoManager.getTags());
+
+        updateParametersSection();
     }
 
-    public PropertiesPanel(ResourceBundle bundle) {
+    public PropertiesPanel(ResourceBundle bundle, ParameterManager parametersManager) {
         this.bundle = bundle;
+        this.parametersManager = parametersManager;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -111,6 +123,16 @@ public class PropertiesPanel extends JPanel {
         dynamicSection = new JPanel();
         dynamicSection.setLayout(new BoxLayout(dynamicSection, BoxLayout.Y_AXIS));
         add(dynamicSection, BorderLayout.CENTER);
+
+        parametersContent = new JPanel();
+        parametersContent.setLayout(new BoxLayout(parametersContent, BoxLayout.Y_AXIS));
+        JPanel parametersPanel = createFoldablePanel(bundle.getString("parameters_title"), parametersContent);
+        add(parametersPanel);
+
+        parametersButton = new JButton(bundle.getString("manage_parameters"));
+        parametersButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        parametersButton.addActionListener(e -> openParametersFrame());
+        parametersContent.add(parametersButton);
 
         JPanel layersPanel = createFoldablePanel(bundle.getString("layers_title"), createLayersPanel());
         add(layersPanel);
@@ -261,6 +283,96 @@ public class PropertiesPanel extends JPanel {
         transformContent.add(floorInfoPanel, gbc);
 
         return transformContent;
+    }
+
+    private void openParametersFrame() {
+        if (selectedObject != null) {
+            ParametersFrame parametersFrame = new ParametersFrame(selectedObject, undoManager, this, parametersManager, bundle);
+            parametersFrame.setVisible(true);
+        } else {
+            JOptionPane.showMessageDialog(this, bundle.getString("no_object_selected"), bundle.getString("error"), JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void updateParametersSection() {
+        parametersContent.removeAll();
+
+        if (selectedObject != null) {
+            java.util.List<Parameter> parameters = undoManager.getParametersListForSpatial(selectedObject);
+            for (Parameter parameter : parameters) {
+                JPanel parameterPanel = createParameterPanel(parameter);
+                parametersContent.add(parameterPanel);
+            }
+        }
+
+        parametersContent.add(parametersButton);
+        parametersContent.revalidate();
+        parametersContent.repaint();
+    }
+
+    private JPanel createParameterPanel(Parameter parameter) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel nameLabel = new JLabel(parameter.getName() + " (" + parameter.getType() + ", " + parameter.getUnit() + "):");
+        panel.add(nameLabel);
+
+        ParameterType type = parameter.getType();
+        switch (type) {
+            case BOOLEAN:
+                panel.add(createBooleanInput(parameter));
+                break;
+            case STRING:
+                panel.add(createStringInput(parameter));
+                break;
+            case NUMBER:
+                panel.add(createNumberInput(parameter));
+                break;
+            default:
+                panel.add(new JLabel("Unsupported type: " + type));
+                break;
+        }
+
+        return panel;
+    }
+
+    private JCheckBox createBooleanInput(Parameter parameter) {
+        JCheckBox checkBox = new JCheckBox();
+        checkBox.setSelected(Boolean.parseBoolean(undoManager.getParameterValue(selectedObject, parameter)));
+        checkBox.addActionListener(e -> {
+            boolean value = checkBox.isSelected();
+            undoManager.setParameterValue(selectedObject, parameter, String.valueOf(value));
+        });
+        return checkBox;
+    }
+
+    private JTextField createStringInput(Parameter parameter) {
+        JTextField textField = new JTextField(10);
+        textField.setText(undoManager.getParameterValue(selectedObject, parameter));
+        textField.addActionListener(e -> {
+            String value = textField.getText();
+            undoManager.setParameterValue(selectedObject, parameter, value);
+        });
+        return textField;
+    }
+
+    private JFormattedTextField createNumberInput(Parameter parameter) {
+        NumberFormat format = NumberFormat.getInstance();
+        NumberFormatter formatter = new NumberFormatter(format);
+        formatter.setValueClass(Double.class);
+        formatter.setMinimum(Double.MIN_VALUE);
+        formatter.setAllowsInvalid(false);
+
+        JFormattedTextField numberField = new JFormattedTextField(formatter);
+        numberField.setValue(Double.parseDouble(undoManager.getParameterValue(selectedObject, parameter)));
+        numberField.setColumns(10);
+        numberField.addPropertyChangeListener("value", e -> {
+            Number value = (Number) numberField.getValue();
+            if (value != null) {
+                undoManager.setParameterValue(selectedObject, parameter, value.toString());
+            }
+        });
+        return numberField;
     }
 
     private JPanel createLayersPanel() {
@@ -489,92 +601,6 @@ public class PropertiesPanel extends JPanel {
     public void updateDynamicSectionToPlainAreaProperties(float area){
         dynamicSection.removeAll();
         dynamicSection.add(new JLabel(bundle.getString("plain_area_area") + String.format("%.2f", area)));
-        dynamicSection.revalidate();
-        dynamicSection.repaint();
-    }
-
-    public void updateDynamicSectionToRackShelf() {
-        dynamicSection.removeAll();
-
-        int transformContentWidth = transformContent.getPreferredSize().width;
-
-        JPanel dynamicPanel = new JPanel();
-        dynamicPanel.setLayout(new BoxLayout(dynamicPanel, BoxLayout.Y_AXIS));
-
-        JScrollPane scrollPane = new JScrollPane(dynamicPanel);
-        scrollPane.setPreferredSize(new Dimension(transformContentWidth, 200));
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-
-        Dimension fieldSize = new Dimension(transformContentWidth, 25);
-
-        dynamicPanel.add(new JLabel(bundle.getString("rack_physical_dimensions")));
-
-        JSpinner heightSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
-        heightSpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("rack_height")));
-        dynamicPanel.add(heightSpinner);
-
-        JSpinner widthSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
-        widthSpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("rack_width")));
-        dynamicPanel.add(widthSpinner);
-
-        JSpinner depthSpinner = new JSpinner(new SpinnerNumberModel(0.0, 0.0, Double.MAX_VALUE, 0.01));
-        depthSpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("rack_depth")));
-        dynamicPanel.add(depthSpinner);
-
-        JSpinner shelvesSpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        shelvesSpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("rack_shelves")));
-        dynamicPanel.add(shelvesSpinner);
-
-        dynamicPanel.add(new JLabel(bundle.getString("rack_weight_capacity")));
-
-        JSpinner perShelfCapacitySpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        perShelfCapacitySpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("shelf_capacity")));
-        dynamicPanel.add(perShelfCapacitySpinner);
-
-        JSpinner totalCapacitySpinner = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        totalCapacitySpinner.setPreferredSize(fieldSize);
-        dynamicPanel.add(new JLabel(bundle.getString("total_capacity")));
-        dynamicPanel.add(totalCapacitySpinner);
-
-        if (selectedObject != null) {
-            RackSettings existingSettings = undoManager.getRackSettingsMap().get(selectedObject);
-            if (existingSettings != null) {
-                heightSpinner.setValue(existingSettings.getHeight());
-                widthSpinner.setValue(existingSettings.getWidth());
-                depthSpinner.setValue(existingSettings.getDepth());
-                shelvesSpinner.setValue(existingSettings.getShelves());
-                perShelfCapacitySpinner.setValue(existingSettings.getPerShelfCapacity());
-                totalCapacitySpinner.setValue(existingSettings.getTotalCapacity());
-            }
-        }
-
-        dynamicSection.add(scrollPane);
-
-        JButton setSettingsButton = new JButton(bundle.getString("set_settings"));
-        setSettingsButton.addActionListener(e -> {
-            double height = (Double) heightSpinner.getValue();
-            double width = (Double) widthSpinner.getValue();
-            double depth = (Double) depthSpinner.getValue();
-            int shelves = (Integer) shelvesSpinner.getValue();
-            int perShelfCapacity = (Integer) perShelfCapacitySpinner.getValue();
-            int totalCapacity = (Integer) totalCapacitySpinner.getValue();
-
-            RackSettings rackSettings = new RackSettings(height, width, depth, shelves, perShelfCapacity, totalCapacity);
-
-            if (selectedObject != null) {
-                undoManager.setRackSettings(selectedObject, rackSettings);
-            }
-
-            System.out.println(rackSettings);
-        });
-
-        dynamicPanel.add(setSettingsButton);
-
         dynamicSection.revalidate();
         dynamicSection.repaint();
     }

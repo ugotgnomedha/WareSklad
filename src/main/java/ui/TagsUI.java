@@ -1,13 +1,12 @@
 package ui;
 
 import UndoRedo.UndoManager;
-import tech.Tag;
+import tech.tags.Tag;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.WindowFocusListener;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -17,26 +16,16 @@ public class TagsUI {
     private UndoManager undoManager;
     private PropertiesPanel propertiesPanel;
 
-    private final Tag defaultRackTag = new Tag("Rack", true, Color.BLUE);
-
     public TagsUI(ResourceBundle bundle) {
         this.bundle = bundle;
     }
 
     public void setPropertiesPanel(PropertiesPanel propertiesPanel) {
         this.propertiesPanel = propertiesPanel;
-        initializeDefaultTags();
     }
 
     public void setUndoManager(UndoManager undoManager) {
         this.undoManager = undoManager;
-    }
-
-    private void initializeDefaultTags() {
-        if (undoManager.getTags().stream().noneMatch(tag -> tag.getName().equals("Rack"))) {
-            undoManager.addTag(defaultRackTag);
-        }
-        propertiesPanel.updateTagDropdown(undoManager.getTags());
     }
 
     public JMenu createTagsMenu(JFrame frame) {

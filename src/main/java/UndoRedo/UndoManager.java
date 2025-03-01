@@ -3,10 +3,11 @@ package UndoRedo;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
+import tech.parameters.Parameter;
 import tech.simulations.Pallet;
-import tech.simulations.RackSettings;
-import tech.Tag;
-import tech.TagManager;
+import tech.tags.RackSettings;
+import tech.tags.Tag;
+import tech.tags.TagManager;
 
 import java.util.*;
 import java.util.List;
@@ -19,7 +20,7 @@ public class UndoManager {
     private HashMap<Spatial, Tag> tagMap = new HashMap<>();
     private ArrayList<Tag> tags = new ArrayList<>();
     private TagManager tagManager = new TagManager();
-    private final Map<Spatial, RackSettings> rackSettingsMap = new HashMap<>();
+    private final Map<Spatial, Map<Parameter, String>> objectsParameters = new HashMap<>();
 
     private final Map<Geometry, Float> floorCompleteAreas = new HashMap<>();
     private final Map<Geometry, Float> floorSegmentDistances = new HashMap<>();
@@ -80,7 +81,7 @@ public class UndoManager {
             PlainAreaPlacementAction plainAreaAction = (PlainAreaPlacementAction) action;
             sceneObjects.add(plainAreaAction.getPlainAreaGeometry());
             plainAreaCompleteAreas.putAll(plainAreaAction.getPlainAreaCompleteAreas());
-        }  else if (action instanceof RackPlacementAction) {
+        } else if (action instanceof RackPlacementAction) {
             RackPlacementAction rackAction = (RackPlacementAction) action;
             sceneObjects.addAll(rackAction.getPlacedRacks());
         } else if (action instanceof PasteAction) {
@@ -293,6 +294,10 @@ public class UndoManager {
 
     public void addSpatialWithTag(Spatial spatial, Tag tag) {
         if (spatial != null && tag != null) {
+            Tag currentTag = tagMap.get(spatial);
+            if (currentTag != null) {
+                removeSpatialTag(spatial);
+            }
             tagMap.put(spatial, tag);
             tagManager.addSpatialWithTag(spatial, tag);
         }
@@ -323,16 +328,46 @@ public class UndoManager {
         }
     }
 
-    public Map<Spatial, RackSettings> getRackSettingsMap() {
-        return rackSettingsMap;
+    public void addParameterToSpatial(Spatial spatial, Parameter parameter) {
+        objectsParameters.computeIfAbsent(spatial, k -> new HashMap<>())
+                .put(parameter, parameter.getDefaultValue().toString());
     }
 
-    public void setRackSettings(Spatial rack, RackSettings settings) {
-        if (rackSettingsMap.containsKey(rack)) {
-            rackSettingsMap.replace(rack, settings);
-        } else {
-            rackSettingsMap.put(rack, settings);
+    public void removeParameterFromSpatial(Spatial spatial, Parameter parameter) {
+        objectsParameters.computeIfPresent(spatial, (k, v) -> {
+            v.remove(parameter);
+            return v;
+        });
+    }
+
+    public boolean hasParameter(Spatial spatial, Parameter parameter) {
+        return objectsParameters.getOrDefault(spatial, Collections.emptyMap()).containsKey(parameter);
+    }
+
+    public String getParameterValue(Spatial spatial, Parameter parameter) {
+        return objectsParameters.getOrDefault(spatial, Collections.emptyMap()).get(parameter);
+    }
+
+    public void setParameterValue(Spatial spatial, Parameter parameter, String value) {
+        if (objectsParameters.containsKey(spatial)) {
+            objectsParameters.get(spatial).put(parameter, value);
         }
+    }
+
+    public List<Parameter> getParametersListForSpatial(Spatial spatial) {
+        return new ArrayList<>(objectsParameters.getOrDefault(spatial, Collections.emptyMap()).keySet());
+    }
+
+    public Map<Parameter, String> getParametersForSpatial(Spatial spatial) {
+        return objectsParameters.get(spatial);
+    }
+
+    public Map<Parameter, String> getOrCreateParametersForSpatial(Spatial spatial) {
+        return objectsParameters.computeIfAbsent(spatial, k -> new HashMap<>());
+    }
+
+    public Map<Spatial, Map<Parameter, String>> getObjectsParameters() {
+        return objectsParameters;
     }
 
     public Map<Geometry, Float> getPlainAreaCompleteAreas() {
