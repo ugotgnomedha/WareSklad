@@ -94,6 +94,7 @@
                                     <directory>.</directory>
                                     <includes>
                                         <include>catalogue_items.json</include>
+                                        <include>parameters.json</include>
                                     </includes>
                                 </resource>
                             </resources>
